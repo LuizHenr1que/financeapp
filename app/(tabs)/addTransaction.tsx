@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  FlatList,
 } from 'react-native';
 import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { useData } from '@/context/DataContext';
@@ -47,12 +48,23 @@ export default function AddTransactionScreen() {
     installments: '',
     description: '',
     launchType: 'unico' as 'unico' | 'recorrente' | 'parcelado',
+    valorComoParcela: false, // novo campo
   });
   const [loading, setLoading] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [calendarTempDate, setCalendarTempDate] = useState(new Date(formData.date));
+  const [recorrenteModalVisible, setRecorrenteModalVisible] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('Mensal');
+  const [installments, setInstallments] = useState(1);
+  const [parceladoModalVisible, setParceladoModalVisible] = useState(false);
+  const [parcelas, setParcelas] = useState(1);
+  const [valorComoParcela, setValorComoParcela] = useState(false);
+  const [parceladoTitle, setParceladoTitle] = useState('');
+  const [parceladoDescription, setParceladoDescription] = useState('');
   const typeModalRef = useRef<any>(null);
   const calendarModalRef = useRef<Modalize>(null);
+  const recorrenteModalRef = useRef<Modalize>(null);
+  const parceladoModalRef = useRef<Modalize>(null);
 
   const TRANSACTION_TYPES = [
     { value: 'income', label: 'Receita' },
@@ -62,6 +74,9 @@ export default function AddTransactionScreen() {
 
   const filteredCategories = data.categories.filter(cat => cat.type === formData.type);
   const availableCards = data.cards;
+
+  const recurrenceOptions = ['Anual', 'Mensal', 'Semanal', 'Diária'];
+  const installmentsOptions = Array.from({ length: 120 }, (_, i) => i + 1);
 
   useEffect(() => {
     if (params?.type === 'income' || params?.type === 'expense') {
@@ -159,7 +174,8 @@ export default function AddTransactionScreen() {
       </View>
 
       {/* Novo Formulário */}
-      <ScrollView style={[styles.content, { backgroundColor: theme.colors.surface }]} keyboardShouldPersistTaps="handled">
+      {/* Substituir ScrollView por View para evitar erro de VirtualizedList aninhada */}
+      <View style={[styles.content, { backgroundColor: theme.colors.surface }]}> 
         {/* Título */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Título</Text>
@@ -229,10 +245,14 @@ export default function AddTransactionScreen() {
         {/* Categoria */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Categoria</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {filteredCategories.map(category => (
+          <FlatList
+            data={filteredCategories}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={category => category.id}
+            contentContainerStyle={styles.categoryScroll}
+            renderItem={({ item: category }) => (
               <TouchableOpacity
-                key={category.id}
                 style={[
                   styles.categoryOption,
                   { backgroundColor: category.color },
@@ -242,16 +262,20 @@ export default function AddTransactionScreen() {
               >
                 <Text style={styles.categoryOptionText}>{category.name}</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            )}
+          />
         </View>
         {/* Conta ou Cartão */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Conta ou Cartão</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {availableCards.map(card => (
+          <FlatList
+            data={availableCards}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={card => card.id}
+            contentContainerStyle={styles.categoryScroll}
+            renderItem={({ item: card }) => (
               <TouchableOpacity
-                key={card.id}
                 style={[
                   styles.cardOption,
                   { backgroundColor: card.color },
@@ -261,33 +285,51 @@ export default function AddTransactionScreen() {
               >
                 <Text style={styles.cardOptionText}>{card.name}</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            )}
+          />
         </View>
         {/* Lançamento */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Lançamento</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={styles.dateButtonRow}>
             <Button
               title="Único"
               onPress={() => setFormData({ ...formData, launchType: 'unico' })}
               variant={formData.launchType === 'unico' ? 'primary' : 'outline'}
               size="small"
-              style={{ flex: 1 }}
+              style={{
+                ...styles.dateButton,
+                flex: 0.9,
+                ...(formData.launchType === 'unico' ? styles.dateButtonActive : {}),
+              }}
             />
             <Button
               title="Recorrente"
-              onPress={() => setFormData({ ...formData, launchType: 'recorrente' })}
+              onPress={() => {
+                setFormData({ ...formData, launchType: 'recorrente' });
+                recorrenteModalRef.current?.open();
+              }}
               variant={formData.launchType === 'recorrente' ? 'primary' : 'outline'}
               size="small"
-              style={{ flex: 1 }}
+              style={{
+                ...styles.dateButton,
+                flex: 1.1,
+                ...(formData.launchType === 'recorrente' ? styles.dateButtonActive : {}),
+              }}
             />
             <Button
               title="Parcelado"
-              onPress={() => setFormData({ ...formData, launchType: 'parcelado' })}
+              onPress={() => {
+                setFormData({ ...formData, launchType: 'parcelado' });
+                parceladoModalRef.current?.open();
+              }}
               variant={formData.launchType === 'parcelado' ? 'primary' : 'outline'}
               size="small"
-              style={{ flex: 1 }}
+              style={{
+                ...styles.dateButton,
+                flex: 1.1,
+                ...(formData.launchType === 'parcelado' ? styles.dateButtonActive : {}),
+              }}
             />
           </View>
         </View>
@@ -306,7 +348,7 @@ export default function AddTransactionScreen() {
             disabled={loading}
           />
         </View>
-      </ScrollView>
+      </View>
       {/* Modal de Calendário */}
       <Modalize
         ref={calendarModalRef}
@@ -386,6 +428,165 @@ export default function AddTransactionScreen() {
             style={{ minWidth: 140 }}
           />
         </View>
+      </Modalize>
+
+      {/* Modal de Recorrente */}
+      <Modalize
+        ref={recorrenteModalRef}
+        modalHeight={400}
+        handleStyle={{ backgroundColor: theme.colors.border }}
+        modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+        onClose={() => {}}
+      >
+        <Text style={{ fontSize: 18, color: theme.colors.text, textAlign: 'center', marginBottom: 8 }}>
+          Receita <Text style={{ fontWeight: 'bold' }}>recorrente</Text>
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 24, marginTop: 16 }}>
+          {/* Coluna Recorrência */}
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginBottom: 8 }}>Recorrência</Text>
+            <FlatList
+              data={recurrenceOptions}
+              keyExtractor={item => item}
+              showsVerticalScrollIndicator={false}
+              style={{ height: 120 }}
+              contentContainerStyle={{ alignItems: 'center' }}
+              nestedScrollEnabled={true}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => setRecurrenceType(item)}>
+                  <Text style={{
+                    fontSize: 18,
+                    fontWeight: recurrenceType === item ? 'bold' : 'normal',
+                    color: recurrenceType === item ? theme.colors.primary : theme.colors.text,
+                    marginVertical: 8,
+                    textAlign: 'center',
+                  }}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+          {/* Coluna Parcelas */}
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginBottom: 8 }}>Parcelas</Text>
+            <FlatList
+              data={installmentsOptions}
+              keyExtractor={item => item.toString()}
+              showsVerticalScrollIndicator={false}
+              style={{ height: 120 }}
+              contentContainerStyle={{ alignItems: 'center' }}
+              initialScrollIndex={installments - 1}
+              getItemLayout={(_, index) => ({ length: 32, offset: 32 * index, index })}
+              nestedScrollEnabled={true}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => setInstallments(item)}>
+                  <Text style={{
+                    fontSize: 18,
+                    fontWeight: installments === item ? 'bold' : 'normal',
+                    color: installments === item ? theme.colors.primary : theme.colors.text,
+                    marginVertical: 8,
+                    textAlign: 'center',
+                  }}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+        {/* Botão Salvar do modal */}
+        <View style={{ alignItems: 'center', marginTop: 24 }}>
+          <Button
+            title="Salvar"
+            onPress={() => {
+              setFormData({ ...formData, launchType: 'recorrente', installments: installments.toString() });
+              recorrenteModalRef.current?.close();
+            }}
+            style={{ minWidth: 140 }}
+          />
+        </View>
+      </Modalize>
+
+      {/* Modal de Parcelado */}
+      <Modalize
+        ref={parceladoModalRef}
+        modalHeight={500}
+        handleStyle={{ backgroundColor: theme.colors.border }}
+        modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+        onClose={() => {}}
+      >
+        {/* Título estilizado */}
+        <Text style={{ fontSize: 22, color: theme.colors.text, textAlign: 'center', marginBottom: 24, fontWeight: '400' }}>
+          Receita <Text style={{ fontWeight: 'bold' }}>Parcelada</Text>
+        </Text>
+        {/* FlatList vertical rolável de parcelas, começando do 1 */}
+        <View style={{ alignItems: 'center', marginBottom: 32, height: 200, justifyContent: 'center' }}>
+          <FlatList
+            data={Array.from({ length: 360 }, (_, i) => i + 1)}
+            keyExtractor={item => item.toString()}
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 200, minWidth: 100 }}
+            contentContainerStyle={{ alignItems: 'center', justifyContent: 'flex-start', paddingVertical: 0 }}
+            initialScrollIndex={0}
+            getItemLayout={(_, index) => ({ length: 48, offset: 48 * index, index })}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => setParcelas(item)}
+                style={{ marginVertical: 4, alignItems: 'center', justifyContent: 'center', width: 100 }}
+              >
+                <Text style={{
+                  fontSize: item === parcelas ? 38 : 24,
+                  color: item === parcelas ? theme.colors.primary : theme.colors.textSecondary,
+                  fontWeight: item === parcelas ? 'bold' : 'normal',
+                  opacity: item === parcelas ? 1 : 0.5,
+                }}>{item}</Text>
+              </TouchableOpacity>
+            )}
+            snapToInterval={48}
+            decelerationRate={0.98}
+          />
+        </View>
+        {/* Caixa com borda, checkbox, label e descrição */}
+        <View style={{ borderWidth: 1.5, borderColor: theme.colors.border, borderRadius: 16, padding: 16, marginBottom: 32, backgroundColor: 'transparent', flexDirection: 'row', alignItems: 'flex-start' }}>
+          <TouchableOpacity
+            style={{ marginRight: 12, marginTop: 2 }}
+            onPress={() => setValorComoParcela(v => !v)}
+            activeOpacity={0.7}
+          >
+            <View style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              borderWidth: 2,
+              borderColor: theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: valorComoParcela ? theme.colors.primary : 'transparent',
+            }}>
+              {valorComoParcela && (
+                <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: theme.colors.surface }} />
+              )}
+            </View>
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 2 }}>Valor da parcela</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, opacity: 0.7 }}>
+              Marcar essa opção significa usar valor da parcela ao invés do total
+            </Text>
+          </View>
+        </View>
+        {/* Botão Aplicar */}
+        <Button
+          title="Aplicar"
+          onPress={() => {
+            setFormData({
+              ...formData,
+              launchType: 'parcelado',
+              installments: parcelas.toString(),
+              valorComoParcela,
+            });
+            parceladoModalRef.current?.close();
+          }}
+          style={{ minWidth: 180, borderRadius: 24, alignSelf: 'center', marginTop: 8, height: 48, justifyContent: 'center' }}
+          textStyle={{ fontSize: 18, fontWeight: 'bold' }}
+        />
       </Modalize>
     </View>
   );
