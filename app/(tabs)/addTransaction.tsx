@@ -119,24 +119,39 @@ export default function AddTransactionScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: formData.type === 'income' ? theme.colors.income : theme.colors.expense },
+        {
+          backgroundColor:
+            formData.type === 'income'
+              ? theme.colors.income
+              : theme.colors.expense,
+        },
         { paddingTop: insets.top },
       ]}
     >
       <StatusBar
-        backgroundColor={formData.type === 'income' ? theme.colors.income : theme.colors.expense}
+        backgroundColor={
+          formData.type === 'income'
+            ? theme.colors.income
+            : theme.colors.expense
+        }
         barStyle="dark-content"
       />
 
       {/* Top Bar */}
       <View style={styles.topBar}>
         <View style={styles.topBarSide}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.topBarButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.topBarButton}
+          >
             <ArrowLeft size={28} color="#fff" />
           </TouchableOpacity>
         </View>
         <View style={styles.topBarCenter}>
-          <TouchableOpacity style={styles.typeSelectTop} onPress={() => typeModalRef.current?.open()}>
+          <TouchableOpacity
+            style={styles.typeSelectTop}
+            onPress={() => typeModalRef.current?.open()}
+          >
             <Text style={styles.typeSelectTopText}>{selectedType?.label}</Text>
             <ChevronDown size={20} color="#fff" style={{ marginLeft: 6 }} />
           </TouchableOpacity>
@@ -149,10 +164,7 @@ export default function AddTransactionScreen() {
       </View>
 
       {/* Modal customizado para seleção do tipo de transação */}
-      <TransactionTypeModal
-        ref={typeModalRef}
-        onClose={() => {}}
-      />
+      <TransactionTypeModal ref={typeModalRef} onClose={() => {}} />
 
       {/* Large Editable Value Input */}
       <View style={styles.valueSection}>
@@ -162,7 +174,9 @@ export default function AddTransactionScreen() {
           <TextInput
             style={styles.valueInput}
             value={formData.amount}
-            onChangeText={text => setFormData({ ...formData, amount: text.replace(/[^0-9,]/g, '') })}
+            onChangeText={(text) =>
+              setFormData({ ...formData, amount: text.replace(/[^0-9,]/g, '') })
+            }
             placeholder="0,00"
             placeholderTextColor="#fff"
             keyboardType="numeric"
@@ -183,7 +197,7 @@ export default function AddTransactionScreen() {
           <Text style={styles.inputLabel}>Título</Text>
           <InputLogin
             value={formData.title || ''}
-            onChangeText={text => setFormData({ ...formData, title: text })}
+            onChangeText={(text) => setFormData({ ...formData, title: text })}
             placeholder="Ex: Salário, Mercado, etc."
             containerStyle={{ marginBottom: 0 }}
           />
@@ -193,7 +207,9 @@ export default function AddTransactionScreen() {
           <Text style={styles.inputLabel}>Descrição</Text>
           <InputLogin
             value={formData.description}
-            onChangeText={text => setFormData({ ...formData, description: text })}
+            onChangeText={(text) =>
+              setFormData({ ...formData, description: text })
+            }
             placeholder="Adicione uma descrição"
             containerStyle={{ marginBottom: 0 }}
           />
@@ -204,13 +220,24 @@ export default function AddTransactionScreen() {
           <View style={styles.dateButtonRow}>
             <Button
               title="Hoje"
-              onPress={() => setFormData({ ...formData, date: getLocalDateString(new Date()) })}
-              variant={formData.date === getLocalDateString(new Date()) ? 'primary' : 'outline'}
+              onPress={() =>
+                setFormData({
+                  ...formData,
+                  date: getLocalDateString(new Date()),
+                })
+              }
+              variant={
+                formData.date === getLocalDateString(new Date())
+                  ? 'primary'
+                  : 'outline'
+              }
               size="small"
               style={{
                 ...styles.dateButton,
                 flex: 0.7,
-                ...(formData.date === getLocalDateString(new Date()) ? styles.dateButtonActive : {}),
+                ...(formData.date === getLocalDateString(new Date())
+                  ? styles.dateButtonActive
+                  : {}),
               }}
             />
             <Button
@@ -220,12 +247,24 @@ export default function AddTransactionScreen() {
                 ontem.setDate(ontem.getDate() - 1);
                 setFormData({ ...formData, date: getLocalDateString(ontem) });
               }}
-              variant={(() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return formData.date === getLocalDateString(ontem) ? 'primary' : 'outline'; })()}
+              variant={(() => {
+                const ontem = new Date();
+                ontem.setDate(ontem.getDate() - 1);
+                return formData.date === getLocalDateString(ontem)
+                  ? 'primary'
+                  : 'outline';
+              })()}
               size="small"
               style={{
                 ...styles.dateButton,
                 flex: 0.7,
-                ...((() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return formData.date === getLocalDateString(ontem) ? styles.dateButtonActive : {}; })()),
+                ...(() => {
+                  const ontem = new Date();
+                  ontem.setDate(ontem.getDate() - 1);
+                  return formData.date === getLocalDateString(ontem)
+                    ? styles.dateButtonActive
+                    : {};
+                })(),
               }}
             />
             <Button
@@ -234,12 +273,30 @@ export default function AddTransactionScreen() {
                 setCalendarTempDate(new Date(formData.date));
                 calendarModalRef.current?.open();
               }}
-              variant={formData.date !== getLocalDateString(new Date()) && formData.date !== (() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return getLocalDateString(ontem); })() ? 'primary' : 'outline'}
+              variant={
+                formData.date !== getLocalDateString(new Date()) &&
+                formData.date !==
+                  (() => {
+                    const ontem = new Date();
+                    ontem.setDate(ontem.getDate() - 1);
+                    return getLocalDateString(ontem);
+                  })()
+                  ? 'primary'
+                  : 'outline'
+              }
               size="small"
               style={{
                 ...styles.dateButton,
                 flex: 1.3,
-                ...(formData.date !== getLocalDateString(new Date()) && formData.date !== (() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return getLocalDateString(ontem); })() ? styles.dateButtonActive : {}),
+                ...(formData.date !== getLocalDateString(new Date()) &&
+                formData.date !==
+                  (() => {
+                    const ontem = new Date();
+                    ontem.setDate(ontem.getDate() - 1);
+                    return getLocalDateString(ontem);
+                  })()
+                  ? styles.dateButtonActive
+                  : {}),
               }}
             />
           </View>
@@ -248,16 +305,23 @@ export default function AddTransactionScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Categoria</Text>
           {/* Troca FlatList por ScrollView horizontal para manter o design e eliminar o erro */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {filteredCategories.map(category => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+          >
+            {filteredCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
                   styles.categoryOption,
                   { backgroundColor: category.color },
-                  formData.categoryId === category.id && styles.categoryOptionSelected,
+                  formData.categoryId === category.id &&
+                    styles.categoryOptionSelected,
                 ]}
-                onPress={() => setFormData({ ...formData, categoryId: category.id })}
+                onPress={() =>
+                  setFormData({ ...formData, categoryId: category.id })
+                }
               >
                 <Text style={styles.categoryOptionText}>{category.name}</Text>
               </TouchableOpacity>
@@ -268,8 +332,12 @@ export default function AddTransactionScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Conta ou Cartão</Text>
           {/* Troca FlatList por ScrollView horizontal para manter o design e eliminar o erro */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {availableCards.map(card => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+          >
+            {availableCards.map((card) => (
               <TouchableOpacity
                 key={card.id}
                 style={[
@@ -296,7 +364,9 @@ export default function AddTransactionScreen() {
               style={{
                 ...styles.dateButton,
                 flex: 0.9,
-                ...(formData.launchType === 'unico' ? styles.dateButtonActive : {}),
+                ...(formData.launchType === 'unico'
+                  ? styles.dateButtonActive
+                  : {}),
               }}
             />
             <Button
@@ -305,12 +375,16 @@ export default function AddTransactionScreen() {
                 setFormData({ ...formData, launchType: 'recorrente' });
                 recorrenteModalRef.current?.open();
               }}
-              variant={formData.launchType === 'recorrente' ? 'primary' : 'outline'}
+              variant={
+                formData.launchType === 'recorrente' ? 'primary' : 'outline'
+              }
               size="small"
               style={{
                 ...styles.dateButton,
                 flex: 1.1,
-                ...(formData.launchType === 'recorrente' ? styles.dateButtonActive : {}),
+                ...(formData.launchType === 'recorrente'
+                  ? styles.dateButtonActive
+                  : {}),
               }}
             />
             <Button
@@ -319,12 +393,16 @@ export default function AddTransactionScreen() {
                 setFormData({ ...formData, launchType: 'parcelado' });
                 parceladoModalRef.current?.open();
               }}
-              variant={formData.launchType === 'parcelado' ? 'primary' : 'outline'}
+              variant={
+                formData.launchType === 'parcelado' ? 'primary' : 'outline'
+              }
               size="small"
               style={{
                 ...styles.dateButton,
                 flex: 1.1,
-                ...(formData.launchType === 'parcelado' ? styles.dateButtonActive : {}),
+                ...(formData.launchType === 'parcelado'
+                  ? styles.dateButtonActive
+                  : {}),
               }}
             />
           </View>
@@ -344,17 +422,25 @@ export default function AddTransactionScreen() {
         ref={calendarModalRef}
         adjustToContentHeight
         handleStyle={{ backgroundColor: theme.colors.border }}
-        modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+        modalStyle={{
+          backgroundColor: theme.colors.surface,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: 24,
+        }}
         onClose={() => setCalendarVisible(false)}
       >
         <Text style={styles.calendarModalTitle}>Selecione a data</Text>
         <Calendar
           current={getLocalDateString(calendarTempDate)}
-          onDayPress={day => {
+          onDayPress={(day) => {
             setCalendarTempDate(new Date(day.dateString));
           }}
           markedDates={{
-            [getLocalDateString(calendarTempDate)]: { selected: true, selectedColor: theme.colors.primary }
+            [getLocalDateString(calendarTempDate)]: {
+              selected: true,
+              selectedColor: theme.colors.primary,
+            },
           }}
           theme={{
             backgroundColor: theme.colors.surface,
@@ -377,15 +463,30 @@ export default function AddTransactionScreen() {
           }}
         />
         {/* Linha separadora */}
-        <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 16 }} />
+        <View
+          style={{
+            height: 1,
+            backgroundColor: theme.colors.border,
+            marginVertical: 16,
+          }}
+        />
         {/* Botões Hoje/Ontem */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
           <Button
             title="Hoje"
             onPress={() => setCalendarTempDate(new Date())}
             variant={(() => {
               const hoje = getLocalDateString(new Date());
-              return getLocalDateString(calendarTempDate) === hoje ? 'primary' : 'outline';
+              return getLocalDateString(calendarTempDate) === hoje
+                ? 'primary'
+                : 'outline';
             })()}
             size="small"
             style={{ flex: 1 }}
@@ -400,7 +501,10 @@ export default function AddTransactionScreen() {
             variant={(() => {
               const ontem = new Date();
               ontem.setDate(ontem.getDate() - 1);
-              return getLocalDateString(calendarTempDate) === getLocalDateString(ontem) ? 'primary' : 'outline';
+              return getLocalDateString(calendarTempDate) ===
+                getLocalDateString(ontem)
+                ? 'primary'
+                : 'outline';
             })()}
             size="small"
             style={{ flex: 1 }}
@@ -420,194 +524,294 @@ export default function AddTransactionScreen() {
         </View>
       </Modalize>
       <Modalize
-  ref={recorrenteModalRef}
-  modalHeight={400}
-  handleStyle={{ backgroundColor: theme.colors.border }}
-  modalStyle={{
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-  }}
-  onClose={() => {}}
->
-  {/* Container principal ocupa toda a altura do modal */}
-  <View style={{ flex: 1, height: '100%' }}>
-    {/* Título fixo no topo */}
-    <View>
-      <Text
-        style={{
-          fontSize: 22,
-          color: theme.colors.text,
-          textAlign: 'center',
-          fontWeight: '400',
+        ref={recorrenteModalRef}
+        modalHeight={400}
+        handleStyle={{ backgroundColor: theme.colors.border }}
+        modalStyle={{
+          backgroundColor: theme.colors.surface,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: 24,
         }}
+        onClose={() => {}}
       >
-        Receita <Text style={{ fontWeight: 'bold' }}>recorrente</Text>
-      </Text>
-    </View>
+        {/* Container principal ocupa toda a altura do modal */}
+        <View style={{ flex: 1, height: '100%' }}>
+          {/* Título fixo no topo */}
+          <View>
+            <Text
+              style={{
+                fontSize: 22,
+                color: theme.colors.text,
+                textAlign: 'center',
+                fontWeight: '400',
+              }}
+            >
+              Receita <Text style={{ fontWeight: 'bold' }}>recorrente</Text>
+            </Text>
+          </View>
 
-    {/* Conteúdo centralizado */}
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 30 }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: 20,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        {/* Coluna Recorrência */}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text
+          {/* Conteúdo centralizado */}
+          <View
             style={{
-              fontSize: 15,
-              color: theme.colors.textSecondary,
-              marginBottom: 8,
-              fontWeight: 'bold',
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingVertical: 30,
             }}
           >
-            Recorrência
-          </Text>
-          <ScrollView
-            style={{ maxHeight: 150 }}
-            contentContainerStyle={{ alignItems: 'center' }}
-            showsVerticalScrollIndicator={false}
-          >
-            {recurrenceOptions.map(item => (
-              <TouchableOpacity key={item} onPress={() => setRecurrenceType(item)}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              {/* Coluna Recorrência */}
+              <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text
                   style={{
-                    fontSize: 20,
-                    fontWeight: recurrenceType === item ? 'bold' : '400',
-                    color: recurrenceType === item ? theme.colors.primary : theme.colors.text,
-                    marginVertical: 10,
-                    textAlign: 'center',
+                    fontSize: 15,
+                    color: theme.colors.textSecondary,
+                    marginBottom: 8,
+                    fontWeight: 'bold',
                   }}
                 >
-                  {item}
+                  Recorrência
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        {/* Coluna Parcelas */}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text
-            style={{
-              fontSize: 15,
-              color: theme.colors.textSecondary,
-              marginBottom: 8,
-              fontWeight: 'bold',
-            }}
-          >
-            Parcelas
-          </Text>
-          <ScrollView
-            style={{ maxHeight: 150 }}
-            contentContainerStyle={{ alignItems: 'center' }}
-            showsVerticalScrollIndicator={false}
-          >
-            {installmentsOptions.map(item => (
-              <TouchableOpacity key={item} onPress={() => setInstallments(item)}>
+                <ScrollView
+                  style={{ maxHeight: 150 }}
+                  contentContainerStyle={{ alignItems: 'center' }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {recurrenceOptions.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => setRecurrenceType(item)}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 20,
+                          fontWeight: recurrenceType === item ? 'bold' : '400',
+                          color:
+                            recurrenceType === item
+                              ? theme.colors.primary
+                              : theme.colors.text,
+                          marginVertical: 10,
+                          textAlign: 'center',
+                        }}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              {/* Coluna Parcelas */}
+              <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text
                   style={{
-                    fontSize: 20,
-                    fontWeight: installments === item ? 'bold' : '400',
-                    color: installments === item ? theme.colors.primary : theme.colors.text,
-                    marginVertical: 10,
-                    textAlign: 'center',
+                    fontSize: 15,
+                    color: theme.colors.textSecondary,
+                    marginBottom: 8,
+                    fontWeight: 'bold',
                   }}
                 >
-                  {item}
+                  Parcelas
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                <ScrollView
+                  style={{ maxHeight: 150 }}
+                  contentContainerStyle={{ alignItems: 'center' }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {installmentsOptions.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => setInstallments(item)}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 20,
+                          fontWeight: installments === item ? 'bold' : '400',
+                          color:
+                            installments === item
+                              ? theme.colors.primary
+                              : theme.colors.text,
+                          marginVertical: 10,
+                          textAlign: 'center',
+                        }}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </View>
+
+          {/* Botão sempre no rodapé */}
+          <View>
+            <Button
+              title="Salvar"
+              onPress={() => {
+                setFormData({
+                  ...formData,
+                  launchType: 'recorrente',
+                  installments: installments.toString(),
+                });
+                recorrenteModalRef.current?.close();
+              }}
+              style={{
+                minWidth: 180,
+                borderRadius: 24,
+                alignSelf: 'center',
+                marginTop: 8,
+                height: 51,
+                justifyContent: 'center',
+              }}
+              textStyle={{ fontSize: 18, fontWeight: 'bold' }}
+            />
+          </View>
         </View>
-      </View>
-    </View>
-
-    {/* Botão sempre no rodapé */}
-    <View>
-      <Button
-        title="Salvar"
-        onPress={() => {
-          setFormData({ ...formData, launchType: 'recorrente', installments: installments.toString() });
-          recorrenteModalRef.current?.close();
-        }}
-        style={{
-          minWidth: 180,
-          borderRadius: 24,
-          alignSelf: 'center',
-          marginTop: 8,
-          height: 51,
-          justifyContent: 'center',
-        }}
-        textStyle={{ fontSize: 18, fontWeight: 'bold' }}
-      />
-    </View>
-  </View>
-</Modalize>
-
+      </Modalize>
 
       {/* Modal de Parcelado */}
       <Modalize
         ref={parceladoModalRef}
         modalHeight={500}
         handleStyle={{ backgroundColor: theme.colors.border }}
-        modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+        modalStyle={{
+          backgroundColor: theme.colors.surface,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: 24,
+        }}
         onClose={() => {}}
       >
         {/* Título estilizado */}
-        <Text style={{ fontSize: 22, color: theme.colors.text, textAlign: 'center', marginBottom: 24, fontWeight: '400' }}>
+        <Text
+          style={{
+            fontSize: 22,
+            color: theme.colors.text,
+            textAlign: 'center',
+            marginBottom: 24,
+            fontWeight: '400',
+          }}
+        >
           Receita <Text style={{ fontWeight: 'bold' }}>Parcelada</Text>
         </Text>
         {/* Lista vertical rolável de parcelas, começando do 1 */}
-        <View style={{ alignItems: 'center', marginBottom: 32, height: 200, justifyContent: 'center' }}>
-          <ScrollView style={{ maxHeight: 200, minWidth: 100 }} contentContainerStyle={{ alignItems: 'center', justifyContent: 'flex-start', paddingVertical: 0 }} showsVerticalScrollIndicator={false}>
-            {Array.from({ length: 360 }, (_, i) => i + 1).map(item => (
+        <View
+          style={{
+            alignItems: 'center',
+            marginBottom: 32,
+            height: 200,
+            justifyContent: 'center',
+          }}
+        >
+          <ScrollView
+            style={{ maxHeight: 200, minWidth: 100 }}
+            contentContainerStyle={{
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              paddingVertical: 0,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            {Array.from({ length: 360 }, (_, i) => i + 1).map((item) => (
               <TouchableOpacity
                 key={item}
                 onPress={() => setParcelas(item)}
-                style={{ marginVertical: 4, alignItems: 'center', justifyContent: 'center', width: 100 }}
+                style={{
+                  marginVertical: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 100,
+                }}
               >
-                <Text style={{
-                  fontSize: item === parcelas ? 38 : 24,
-                  color: item === parcelas ? theme.colors.primary : theme.colors.textSecondary,
-                  fontWeight: item === parcelas ? 'bold' : 'normal',
-                  opacity: item === parcelas ? 1 : 0.5,
-                }}>{item}</Text>
+                <Text
+                  style={{
+                    fontSize: item === parcelas ? 38 : 24,
+                    color:
+                      item === parcelas
+                        ? theme.colors.primary
+                        : theme.colors.textSecondary,
+                    fontWeight: item === parcelas ? 'bold' : 'normal',
+                    opacity: item === parcelas ? 1 : 0.5,
+                  }}
+                >
+                  {item}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
         {/* Caixa com borda, checkbox, label e descrição */}
-        <View style={{ borderWidth: 1.5, borderColor: theme.colors.border, borderRadius: 16, padding: 16, marginBottom: 32, backgroundColor: 'transparent', flexDirection: 'row', alignItems: 'flex-start' }}>
+        <View
+          style={{
+            borderWidth: 1.5,
+            borderColor: theme.colors.border,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 32,
+            backgroundColor: 'transparent',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+          }}
+        >
           <TouchableOpacity
             style={{ marginRight: 12, marginTop: 2 }}
-            onPress={() => setValorComoParcela(v => !v)}
+            onPress={() => setValorComoParcela((v) => !v)}
             activeOpacity={0.7}
           >
-            <View style={{
-              width: 22,
-              height: 22,
-              borderRadius: 6,
-              borderWidth: 2,
-              borderColor: theme.colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: valorComoParcela ? theme.colors.primary : 'transparent',
-            }}>
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 6,
+                borderWidth: 2,
+                borderColor: theme.colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: valorComoParcela
+                  ? theme.colors.primary
+                  : 'transparent',
+              }}
+            >
               {valorComoParcela && (
-                <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: theme.colors.surface }} />
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    backgroundColor: theme.colors.surface,
+                  }}
+                />
               )}
             </View>
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 2 }}>Valor da parcela</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, opacity: 0.7 }}>
-              Marcar essa opção significa usar valor da parcela ao invés do total
+            <Text
+              style={{
+                color: theme.colors.text,
+                fontSize: 16,
+                fontWeight: 'bold',
+                marginBottom: 2,
+              }}
+            >
+              Valor da parcela
+            </Text>
+            <Text
+              style={{
+                color: theme.colors.textSecondary,
+                fontSize: 13,
+                opacity: 0.7,
+              }}
+            >
+              Marcar essa opção significa usar valor da parcela ao invés do
+              total
             </Text>
           </View>
         </View>
@@ -623,7 +827,14 @@ export default function AddTransactionScreen() {
             });
             parceladoModalRef.current?.close();
           }}
-          style={{ minWidth: 180, borderRadius: 24, alignSelf: 'center', marginTop: 8, height: 48, justifyContent: 'center' }}
+          style={{
+            minWidth: 180,
+            borderRadius: 24,
+            alignSelf: 'center',
+            marginTop: 8,
+            height: 48,
+            justifyContent: 'center',
+          }}
           textStyle={{ fontSize: 18, fontWeight: 'bold' }}
         />
       </Modalize>

@@ -9,6 +9,8 @@ import { Input } from '@/components/Input';
 import { Header } from '@/components/Header';
 import { Card as CardType } from '@/types';
 import { CardVisual } from './cardsVisual';
+import { AddCardMethodModal } from '@/components/AddCardMethodModal';
+import { Modalize } from 'react-native-modalize';
 
 export default function CardsScreen() {
   const { data, addCard, updateCard, deleteCard } = useData();
@@ -21,6 +23,8 @@ export default function CardsScreen() {
     dueDay: '',
     color: '#1de9b6',
   });
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const addCardModalRef = React.useRef<Modalize>(null);
 
   const colors = [
     '#1de9b6', '#0f2e2a', '#ff6b6b', '#4ecdc4', 
@@ -217,7 +221,7 @@ export default function CardsScreen() {
         {/* Add Card Button */}
         <Card style={styles.addButtonCard}>
           <TouchableOpacity
-            onPress={() => setIsEditing(true)}
+            onPress={() => addCardModalRef.current?.open()}
             style={styles.addCardButton}
           >
             <Plus size={24} color={theme.colors.primary} />
@@ -334,6 +338,18 @@ export default function CardsScreen() {
           />
         </View>
       </ScrollView>
+      {/* Modal de escolha do método de cadastro do cartão */}
+      <AddCardMethodModal
+        ref={addCardModalRef}
+        onManualPress={() => {
+          addCardModalRef.current?.close();
+          setTimeout(() => setIsEditing(true), 300);
+        }}
+        onOpenFinancePress={() => {
+          addCardModalRef.current?.close();
+          // Aqui você pode implementar a lógica do Open Finance futuramente
+        }}
+      />
     </View>
   );
 }
