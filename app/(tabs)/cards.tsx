@@ -11,7 +11,7 @@ import { Card as CardType } from '@/types';
 import { CardVisual } from './cardsVisual';
 import { AddCardMethodModal } from '@/components/AddCardMethodModal';
 import { Modalize } from 'react-native-modalize';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 // Tipagem customizada para o ref do modal
 interface AddCardMethodModalRef {
@@ -34,6 +34,7 @@ export default function CardsScreen() {
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const addCardModalRef = useRef<AddCardMethodModalRef>(null);
   const params = useLocalSearchParams();
+  const router = useRouter();
 
   const colors = [
     '#1de9b6', '#0f2e2a', '#ff6b6b', '#4ecdc4', 
@@ -48,6 +49,9 @@ export default function CardsScreen() {
       } else {
         addCardModalRef.current.open();
       }
+      // Limpa o parâmetro selectedAccount da URL após o uso
+      const { selectedAccount, ...rest } = params;
+      router.replace({ pathname: '/cards', params: rest });
     }
   }, [params.selectedAccount]);
 
