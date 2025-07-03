@@ -3,9 +3,11 @@ import { Home, Receipt, Plus, Calendar, MoreHorizontal } from 'lucide-react-nati
 import { View, TouchableOpacity } from 'react-native';
 import { theme } from '@/theme';
 import { useTransactionTypeModal } from '@/context/TransactionTypeModalContext';
+import { useRouter } from 'expo-router';
 
 export default function TabLayout() {
   const { openModal } = useTransactionTypeModal();
+  const router = useRouter();
 
   return (
     <Tabs
@@ -102,6 +104,15 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <MoreHorizontal size={size} color={color} />
           ),
+          tabBarButton: ({ children, style, ...props }) => (
+            <TouchableOpacity
+              style={style}
+              onPress={() => router.push('/profile')}
+              activeOpacity={0.6}
+            >
+              {children}
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen
@@ -130,6 +141,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="addTransaction"
+        options={{
+          href: null, // Hide from tabs
+        }}
+      />
+      <Tabs.Screen
+        name="accounts"
         options={{
           href: null, // Hide from tabs
         }}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar } from 'react-native';
-import { User, Edit3, Settings, CreditCard, ArrowRight, ArrowLeft, LogOut } from 'lucide-react-native';
+import { User, Edit3, Settings, CreditCard, ArrowRight, ArrowLeft, LogOut, Folder, Banknote } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/theme';
@@ -24,6 +24,19 @@ export default function ProfileScreen() {
   const handleSettings = () => {
     console.log('Configurações');
     // router.push('/settings');
+  };
+
+  const handleCategories = () => {
+    router.push('/(tabs)/categories');
+  };
+
+  const handleCards = () => {
+    router.push('/(tabs)/cards');
+  };
+
+  const handleAccounts = () => {
+    // Ajuste a rota conforme sua estrutura real de navegação
+    router.push('/accounts');
   };
 
   const handlePlans = () => {
@@ -86,6 +99,45 @@ export default function ProfileScreen() {
               <View style={styles.menuItemLeft}>
                 <Settings size={24} color={theme.colors.primary} />
                 <Text style={styles.menuItemText}>Configurações</Text>
+              </View>
+              <ArrowRight size={20} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={handleCategories}
+            >
+              <View style={styles.menuItemLeft}>
+                <Folder size={24} color={theme.colors.primary} />
+                <Text style={styles.menuItemText}>Minhas Categorias</Text>
+              </View>
+              <ArrowRight size={20} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={handleCards}
+            >
+              <View style={styles.menuItemLeft}>
+                <CreditCard size={24} color={theme.colors.primary} />
+                <Text style={styles.menuItemText}>Meus Cartões</Text>
+              </View>
+              <ArrowRight size={20} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={handleAccounts}
+            >
+              <View style={styles.menuItemLeft}>
+                <Banknote size={24} color={theme.colors.primary} />
+                <Text style={styles.menuItemText}>Minhas Contas</Text>
               </View>
               <ArrowRight size={20} color={theme.colors.textSecondary} />
             </TouchableOpacity>

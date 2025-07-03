@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar } from 'react-native';
-import { Plus, CreditCard as Edit3, Trash2 } from 'lucide-react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, FlatList } from 'react-native';
+import { Plus, CreditCard as Edit3, Trash2, Circle, ShoppingCart, Home, Utensils, Car, Heart, Book, Gift, Film, Wifi, Smartphone, Briefcase, Globe, Music, Star, Check } from 'lucide-react-native';
+import { Modalize } from 'react-native-modalize';
+
 import { theme } from '@/theme';
 import { useData } from '@/context/DataContext';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Header } from '@/components/Header';
+import { CategoryModal, CategoryModalRef } from '@/components/CategoryModal';
 import { Category } from '@/types';
+
+// Defina o array colors fora do componente para garantir referência estável
+const colors = [
+  '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+  '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd',
+  '#00d2d3', '#ff9f43', '#10ac84', '#ee5253',
+];
 
 export default function CategoriesScreen() {
   const { data, addCategory, updateCategory, deleteCategory } = useData();
@@ -16,15 +26,33 @@ export default function CategoriesScreen() {
   const [formData, setFormData] = useState({
     name: '',
     color: '#1de9b6',
-    icon: 'circle',
+    icon: 'Circle',
     type: 'expense' as 'income' | 'expense',
   });
+  const modalizeRef = useRef<Modalize>(null);
+  const categoryModalRef = useRef<CategoryModalRef>(null);
+  const [isEssential, setIsEssential] = useState(false);
 
-  const colors = [
-    '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
-    '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd',
-    '#00d2d3', '#ff9f43', '#10ac84', '#ee5253',
+  const iconOptions = [
+    'Circle', 'ShoppingCart', 'Home', 'Utensils', 'Car', 'Heart', 'Book', 'Gift', 'Film', 'Wifi', 'Smartphone', 'Briefcase', 'Globe', 'Music', 'Star',
   ];
+  const iconComponents = {
+    Circle: Circle,
+    ShoppingCart: ShoppingCart,
+    Home: Home,
+    Utensils: Utensils,
+    Car: Car,
+    Heart: Heart,
+    Book: Book,
+    Gift: Gift,
+    Film: Film,
+    Wifi: Wifi,
+    Smartphone: Smartphone,
+    Briefcase: Briefcase,
+    Globe: Globe,
+    Music: Music,
+    Star: Star,
+  };
 
   const handleViewPress = () => {
     console.log('Visualização pressionada');
@@ -86,11 +114,33 @@ export default function CategoriesScreen() {
     setFormData({
       name: '',
       color: '#1de9b6',
-      icon: 'circle',
+      icon: 'Circle',
       type: 'expense',
     });
     setEditingCategory(null);
     setIsEditing(false);
+  };
+
+  const openModal = () => {
+    categoryModalRef.current?.open();
+  };
+
+  const closeModal = () => {
+    // Apenas resete estados locais se necessário, não chame categoryModalRef.current?.close() aqui!
+    // Exemplo: setIsEditing(false); ou outros resets, se precisar
+  };
+
+  const handleModalSave = async (data: any) => {
+    if (!data.name.trim()) {
+      Alert.alert('Erro', 'Digite o nome da categoria');
+      return;
+    }
+    try {
+      await addCategory({ ...data });
+      closeModal();
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível salvar a categoria');
+    }
   };
 
   const incomeCategories = data.categories.filter(cat => cat.type === 'income');
@@ -191,12 +241,11 @@ export default function CategoriesScreen() {
         onFilterPress={handleFilterPress}
         onSearchPress={handleSearchPress}
       />
-
       <ScrollView style={styles.content}>
         {/* Add Category Button */}
         <Card style={styles.addButtonCard}>
           <TouchableOpacity
-            onPress={() => setIsEditing(true)}
+            onPress={openModal}
             style={styles.addCategoryButton}
           >
             <Plus size={24} color={theme.colors.primary} />
@@ -204,68 +253,49 @@ export default function CategoriesScreen() {
           </TouchableOpacity>
         </Card>
 
-        {/* Income Categories */}
+        {/*list Categories */}
         <Card style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Receitas</Text>
-          {incomeCategories.length === 0 ? (
-            <Text style={styles.emptyText}>Nenhuma categoria de receita</Text>
-          ) : (
-            incomeCategories.map(category => (
-              <View key={category.id} style={styles.categoryItem}>
-                <View style={styles.categoryInfo}>
-                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]} />
-                  <Text style={styles.categoryName}>{category.name}</Text>
-                </View>
-                <View style={styles.categoryActions}>
-                  <TouchableOpacity
-                    onPress={() => handleEdit(category)}
-                    style={styles.actionButton}
-                  >
-                    <Edit3 size={16} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(category.id)}
-                    style={styles.actionButton}
-                  >
-                    <Trash2 size={16} color={theme.colors.error} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-        </Card>
-
-        {/* Expense Categories */}
-        <Card style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Despesas</Text>
+          <Text style={styles.sectionTitle}>Categorias padões</Text>
           {expenseCategories.length === 0 ? (
             <Text style={styles.emptyText}>Nenhuma categoria de despesa</Text>
           ) : (
-            expenseCategories.map(category => (
-              <View key={category.id} style={styles.categoryItem}>
-                <View style={styles.categoryInfo}>
-                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]} />
-                  <Text style={styles.categoryName}>{category.name}</Text>
+            expenseCategories.map(category => {
+              const Icon = iconComponents[category.icon as keyof typeof iconComponents] || Circle;
+              return (
+                <View key={category.id} style={styles.categoryItem}>
+                  <View style={styles.categoryInfo}>
+                    <View style={[styles.categoryIcon, { backgroundColor: category.color, alignItems: 'center', justifyContent: 'center' }]}> 
+                      <Icon size={16} color="#fff" />
+                    </View>
+                    <Text style={styles.categoryName}>{category.name}</Text>
+                  </View>
+                  <View style={styles.categoryActions}>
+                    <TouchableOpacity
+                      onPress={() => handleEdit(category)}
+                      style={styles.actionButton}
+                    >
+                      <Edit3 size={16} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(category.id)}
+                      style={styles.actionButton}
+                    >
+                      <Trash2 size={16} color={theme.colors.error} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={styles.categoryActions}>
-                  <TouchableOpacity
-                    onPress={() => handleEdit(category)}
-                    style={styles.actionButton}
-                  >
-                    <Edit3 size={16} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(category.id)}
-                    style={styles.actionButton}
-                  >
-                    <Trash2 size={16} color={theme.colors.error} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </Card>
       </ScrollView>
+      {/* Modal de Nova Categoria */}
+      <CategoryModal
+        ref={categoryModalRef}
+        onClose={closeModal}
+        onSave={handleModalSave}
+        colors={colors}
+      />
     </View>
   );
 }
@@ -286,7 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.lg,
+    paddingVertical: theme.spacing.md, 
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.medium,
     borderWidth: 2,
