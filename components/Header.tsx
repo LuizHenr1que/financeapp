@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Menu, HelpCircle, Eye, Filter, Search } from 'lucide-react-native';
+import { ChevronLeft, Bell, Menu, HelpCircle, Eye, Filter, Search } from 'lucide-react-native';
 import { theme } from '@/theme';
 
 interface HeaderProps {
@@ -15,6 +15,8 @@ interface HeaderProps {
   onFilterPress?: () => void;
   onSearchPress?: () => void;
   onUserPress?: () => void;
+  // Adicionado para páginas que precisam de botão de voltar (ex: contas)
+  onBackPress?: (() => void) | null;
 }
 
 export function Header({ 
@@ -27,7 +29,8 @@ export function Header({
   onViewPress,
   onFilterPress,
   onSearchPress,
-  onUserPress
+  onUserPress,
+  onBackPress // nova prop
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
   
@@ -119,14 +122,18 @@ export function Header({
   );
 
   const renderCardsHeader = () => (
-    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.md }]}>
+    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.md }]}> 
       <StatusBar backgroundColor={theme.colors.primary} barStyle="light-content" />
-      
-      {/* Seção esquerda - Título dos cartões */}
+      {/* Botão de voltar apenas se onBackPress for fornecido */}
+      {onBackPress ? (
+        <TouchableOpacity onPress={onBackPress} style={{ paddingRight: theme.spacing.md }}>
+          <ChevronLeft size={28} color={theme.colors.title} />
+        </TouchableOpacity>
+      ) : null}
       <View style={styles.leftSection}>
         <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>cartões</Text>
-          <Text style={styles.transactionSubtitle}>Todos os cartões</Text>
+          <Text style={styles.transactionTitle}>minhas</Text>
+          <Text style={styles.transactionSubtitle}>contas</Text>
         </View>
       </View>
       
