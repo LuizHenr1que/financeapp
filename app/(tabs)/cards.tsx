@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Plus, Edit3, Trash2, CreditCard, Eye, EyeOff } from 'lucide-react-native';
 import { theme } from '@/theme';
@@ -11,6 +11,14 @@ import { Card as CardType } from '@/types';
 import { CardVisual } from './cardsVisual';
 import { AddCardMethodModal } from '@/components/AddCardMethodModal';
 import { Modalize } from 'react-native-modalize';
+import { useLocalSearchParams } from 'expo-router';
+
+// Tipagem customizada para o ref do modal
+interface AddCardMethodModalRef {
+  open: () => void;
+  close: () => void;
+  openManual?: () => void;
+}
 
 export default function CardsScreen() {
   const { data, addCard, updateCard, deleteCard } = useData();
@@ -24,13 +32,24 @@ export default function CardsScreen() {
     color: '#1de9b6',
   });
   const [showAddCardModal, setShowAddCardModal] = useState(false);
-  const addCardModalRef = React.useRef<Modalize>(null);
+  const addCardModalRef = useRef<AddCardMethodModalRef>(null);
+  const params = useLocalSearchParams();
 
   const colors = [
     '#1de9b6', '#0f2e2a', '#ff6b6b', '#4ecdc4', 
     '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3',
     '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43',
   ];
+
+  React.useEffect(() => {
+    if (params.selectedAccount && addCardModalRef.current) {
+      if (addCardModalRef.current.openManual) {
+        addCardModalRef.current.openManual();
+      } else {
+        addCardModalRef.current.open();
+      }
+    }
+  }, [params.selectedAccount]);
 
   const handleViewPress = () => {
     console.log('Visualização pressionada');

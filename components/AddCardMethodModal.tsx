@@ -7,6 +7,14 @@ import { ChevronRight } from 'lucide-react-native';
 import { View as RNView } from 'react-native';
 import { Input } from './Input';
 import { CreditCard } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+
+// Adiciona tipagem global para selectedAccountTemp
+// @ts-ignore
+// eslint-disable-next-line
+declare global {
+  interface Window { selectedAccountTemp?: string }
+}
 
 export type AddCardMethodModalProps = {
   onManualPress: () => void;
@@ -58,9 +66,28 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
       setSelectedDueDay(prev => prev || new Date().getDate().toString());
       selectDueDayModalRef.current?.open();
     };
+    const router = useRouter();
+    const params = useLocalSearchParams();
+    // Preencher o campo ao retornar da tela de contas
+    React.useEffect(() => {
+      // Se veio por parâmetro (web/deep link)
+      if (params.selectedAccount) {
+        setForm(f => ({ ...f, account: String(params.selectedAccount) }));
+        setStep('manual');
+        modalizeRef.current?.open();
+      }
+      // Se veio por variável global (navegação interna)
+      if (typeof window !== 'undefined' && window.selectedAccountTemp) {
+        setForm(f => ({ ...f, account: String(window.selectedAccountTemp) }));
+        setStep('manual');
+        modalizeRef.current?.open();
+        window.selectedAccountTemp = undefined;
+      }
+    }, [params.selectedAccount]);
     React.useImperativeHandle(ref, () => ({
       open: () => { setStep('choose'); modalizeRef.current?.open(); },
       close: () => { setStep('choose'); modalizeRef.current?.close(); },
+      openManual: () => { setStep('manual'); modalizeRef.current?.open(); },
     }));
     return (
       <>
@@ -109,7 +136,10 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
               <Text style={styles.inputLabel}>Conta de pagamento</Text>
               <TouchableOpacity
                 style={[styles.selectInput, { marginBottom: 16 }]}
-                onPress={() => selectAccountModalRef.current?.open()}
+                onPress={() => {
+                  // Navega para a tela de contas e espera o retorno, passando returnTo
+                  router.push({ pathname: '/accounts', params: { selectMode: 'true', returnTo: '/add' } });
+                }}
                 activeOpacity={0.7}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>

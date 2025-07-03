@@ -5,7 +5,7 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Plus, Banknote, ChevronRight, CreditCard, Calendar } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const mockAccounts = [
   {
@@ -21,6 +21,8 @@ export default function AccountsScreen() {
     alert('Adicionar nova conta (mock)');
   };
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const selectMode = params.selectMode === 'true';
 
   return (
     <View style={styles.container}>
@@ -50,17 +52,27 @@ export default function AccountsScreen() {
         ) : (
           mockAccounts.map(account => (
             <Card key={account.id} style={styles.accountCardCustom}>
-              {/* Linha 1: Ícone de círculo com carteira, nome da conta e saldo */}
-              <View style={styles.cardTopRow}>
-                <View style={styles.circleIcon}>
-                  <CreditCard size={20} color={theme.colors.primary} />
+              <TouchableOpacity
+                disabled={!selectMode}
+                onPress={() => {
+                  if (selectMode) {
+                    router.replace({ pathname: '/cards', params: { selectedAccount: account.name } });
+                  }
+                }}
+                style={{ flex: 1 }}
+                activeOpacity={selectMode ? 0.7 : 1}
+              >
+                <View style={styles.cardTopRow}>
+                  <View style={styles.circleIcon}>
+                    <CreditCard size={20} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.accountNameCustom}>{account.name}</Text>
+                  <View style={styles.saldoContainer}>
+                    <Text style={styles.saldoLabel}>Saldo de</Text>
+                    <Text style={styles.saldoValue}>R$ {account.balance.toFixed(2)}</Text>
+                  </View>
                 </View>
-                <Text style={styles.accountNameCustom}>{account.name}</Text>
-                <View style={styles.saldoContainer}>
-                  <Text style={styles.saldoLabel}>Saldo de</Text>
-                  <Text style={styles.saldoValue}>R$ {account.balance.toFixed(2)}</Text>
-                </View>
-              </View>
+              </TouchableOpacity>
             </Card>
           ))
         )}
