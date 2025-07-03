@@ -38,7 +38,7 @@ export const AddCardMethodOptions: React.FC<AddCardMethodOptionsProps> = ({
 }) => (
   <View style={style}>
     <Text style={[{ fontSize: 20, color: theme.colors.text, textAlign: 'left', marginBottom: 24, fontWeight: '600' }, buttonTitleStyle]}>
-      {title}
+      {title} 
     </Text>
     <Card style={[{ marginBottom: 16, borderWidth: 1.5, borderColor: theme.colors.primary, backgroundColor: 'transparent', borderRadius: 16, padding: 0 }, cardButtonStyle]}>
       <TouchableOpacity style={[{ padding: 20, alignItems: 'flex-start', width: '100%' }, buttonStyle]} onPress={onManualPress}>

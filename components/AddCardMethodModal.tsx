@@ -114,7 +114,6 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
               disabledCardButtonStyle={styles.disabledCardButton}
               buttonStyle={styles.button}
               buttonContentStyle={styles.buttonContent}
-              buttonTitleStyle={styles.buttonTitle}
               buttonDescStyle={styles.buttonDesc}
             />
           ) : (
@@ -366,14 +365,6 @@ const styles = StyleSheet.create({
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-  },
-  buttonTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: 4,
-    textAlign: 'left', // alinhado à esquerda
     width: '100%',
   },
   buttonDesc: {
