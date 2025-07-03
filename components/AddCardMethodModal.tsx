@@ -8,6 +8,7 @@ import { View as RNView } from 'react-native';
 import { Input } from './Input';
 import { CreditCard } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { AddCardMethodOptions } from './AddCardMethodOptions';
 
 // Adiciona tipagem global para selectedAccountTemp
 // @ts-ignore
@@ -99,36 +100,23 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
           onClose={handleCancel}
         >
           {step === 'choose' ? (
-            <>
-              <Text style={styles.title}>
-                Como você deseja cadastrar seu novo cartão de crédito?
-              </Text>
-              <Card style={styles.cardButton}>
-                <TouchableOpacity style={styles.button} onPress={() => {
-                  setStep('manual');
-                  setTimeout(() => modalizeRef.current?.open(), 10);
-                }}>
-                  <View style={styles.buttonContent}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.buttonTitle}>Cartão de crédito manual</Text>
-                      <Text style={styles.buttonDesc}>Cadastre suas transações manualmente</Text>
-                    </View>
-                    <ChevronRight size={24} color={theme.colors.primary} />
-                  </View>
-                </TouchableOpacity>
-              </Card>
-              <Card style={[styles.cardButton, styles.disabledCardButton]}>
-                <RNView style={[styles.button, { opacity: 0.5 }]} pointerEvents="none">
-                  <View style={styles.buttonContent}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.buttonTitle}>Open Finance <Text style={{fontSize:18}}>🔗</Text></Text>
-                      <Text style={styles.buttonDesc}>Em breve: conecte seu cartão via Open Finance</Text>
-                    </View>
-                    <ChevronRight size={24} color={theme.colors.primary} />
-                  </View>
-                </RNView>
-              </Card>
-            </>
+            <AddCardMethodOptions
+              title="Como você deseja cadastrar seu novo cartão de crédito?"
+              manualTitle="Cartão de crédito manual"
+              manualDesc="Cadastre suas transações manualmente"
+              openFinanceTitle="Open Finance"
+              openFinanceDesc="Em breve: conecte seu cartão via Open Finance"
+              onManualPress={() => {
+                setStep('manual');
+                setTimeout(() => modalizeRef.current?.open(), 10);
+              }}
+              cardButtonStyle={styles.cardButton}
+              disabledCardButtonStyle={styles.disabledCardButton}
+              buttonStyle={styles.button}
+              buttonContentStyle={styles.buttonContent}
+              buttonTitleStyle={styles.buttonTitle}
+              buttonDescStyle={styles.buttonDesc}
+            />
           ) : (
             <>
               <Text style={styles.title}>Criar novo cartão</Text>
