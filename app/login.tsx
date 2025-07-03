@@ -1,144 +1,278 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, SafeAreaView } from 'react-native';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
-import { theme } from '@/theme';
-import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/Input';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import InputLogin from '@/components/InputLogin';
+import { theme } from '@/theme';
+import LogoIcon from '@/assets/images/logoicon.svg';
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      router.replace('/(tabs)');
-    }
-  }, [user]);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      setError('Preencha todos os campos');
+    if (!email || !password) {
+      Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
 
     setIsLoading(true);
-    setError('');
-
-    const success = await login(username, password);
-    
-    if (success) {
+    setTimeout(() => {
+      setIsLoading(false);
       router.replace('/(tabs)');
-    } else {
-      setError('Dados incorretos');
-    }
-    
-    setIsLoading(false);
+    }, 1500);
+  };
+
+  const handleGoogleLogin = () => {
+    Alert.alert(
+      'Google Login',
+      'Funcionalidade de login com Google será implementada'
+    );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Finanças</Text>
-          <Text style={styles.subtitle}>Controle suas finanças</Text>
-        </View>
-
-        <Card style={styles.loginCard}>
-          <Input
-            label="Usuário"
-            value={username}
-            onChangeText={setUsername}
-            placeholder="Digite seu usuário"
-            autoCapitalize="none"
-          />
-
-          <Input
-            label="Senha"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Digite sua senha"
-            secureTextEntry
-          />
-
-          {error && <Text style={styles.errorText}>{error}</Text>}
-
-          <Button
-            title={isLoading ? "Entrando..." : "Entrar"}
-            onPress={handleLogin}
-            disabled={isLoading}
-            style={styles.loginButton}
-          />
-
-          <View style={styles.demoInfo}>
-            <Text style={styles.demoText}>Dados para teste:</Text>
-            <Text style={styles.demoCredentials}>Usuário: luiz</Text>
-            <Text style={styles.demoCredentials}>Senha: 12345</Text>
+    <LinearGradient
+      colors={[theme.colors.primary, '#14532d']}
+      style={styles.gradient}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.formBackground} />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            
+            <Text style={styles.logoBrand}>
+              <Text style={styles.logoIn}>In</Text>
+              <Text style={styles.logoFinance}>Finance</Text>
+            </Text>
+            {/* Logo SVG acima do texto */}
+            <LogoIcon width={200} height={200} style={{ marginBottom: 8 }} />
           </View>
-        </Card>
-      </View>
-    </SafeAreaView>
+
+          {/* Form */}
+          <View style={styles.formContainer}>
+            <View style={styles.form}>
+              <InputLogin
+                placeholder="Digite seu email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                leftIcon={<Mail size={20} color="#888" />} // cinza
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor="#888" // cinza
+              />
+
+              <InputLogin
+                placeholder="Digite sua senha"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                leftIcon={<Lock size={20} color="#888" />} // cinza
+                rightIcon={
+                  <TouchableOpacity onPress={() => setShowPassword((v) => !v)} activeOpacity={0.7}>
+                    {showPassword ? (
+                      <EyeOff size={20} color="#888" />
+                    ) : (
+                      <Eye size={20} color="#888" />
+                    )}
+                  </TouchableOpacity>
+                }
+                placeholderTextColor="#888" // cinza
+              />
+
+              <TouchableOpacity style={styles.forgotPassword}>
+                <Text style={styles.forgotPasswordText}>
+                  Esqueceu sua senha?
+                </Text>
+              </TouchableOpacity>
+
+              <Button
+                title={isLoading ? 'Entrando...' : 'Entrar'}
+                onPress={handleLogin}
+                disabled={isLoading}
+                style={styles.loginButton}
+              />
+
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>ou</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Google Login */}
+              <TouchableOpacity
+                onPress={handleGoogleLogin}
+                style={styles.googleButton}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name="google"
+                  size={20}
+                  color="#EA4335"
+                  style={styles.googleIcon}
+                />
+                <Text style={styles.googleText}>Continuar com Google</Text>
+                <ArrowRight size={16} color="#24504c" />
+              </TouchableOpacity>
+
+              {/* Register Link */}
+              <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>Não tem uma conta? </Text>
+                <TouchableOpacity>
+                  <Text style={styles.registerLink}>Criar conta</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: theme.colors.primary,
   },
-  content: {
-    flex: 1,
-    padding: theme.spacing.lg,
-    justifyContent: 'center',
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+  },
+  formBackground: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '70%',
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 600,
+    borderTopRightRadius: 0,
+    paddingTop: 600,
+    zIndex: 0,
   },
   header: {
     alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
+    paddingTop: 64,
+    paddingBottom: 48,
+    paddingHorizontal: 24,
   },
-  title: {
-    fontSize: theme.typography.titleLarge,
-    fontWeight: 'bold',
-    color: theme.colors.title,
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: theme.typography.medium,
-    color: theme.colors.title,
-    opacity: 0.9,
-  },
-  loginCard: {
-    padding: theme.spacing.xl,
-  },
-  errorText: {
-    fontSize: theme.typography.small,
-    color: theme.colors.error,
+  logoBrand: {
+    fontSize: 52,
+    fontFamily: 'Inter-Black',
     textAlign: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
+    letterSpacing: -1,
+  },
+  logoIn: {
+    color: theme.colors.secondary,
+  },
+  logoFinance: {
+    color: theme.colors.title,
+  },
+  tagline: {
+    fontSize: 20,
+    fontFamily: 'Inter-Black', // ainda mais grosso
+    color: '#24504c',
+    textAlign: 'left',
+    width: 320,
+    lineHeight: 26,
+    marginTop: 4,
+    marginBottom: 0,
+    alignSelf: 'center',
+  },
+  formContainer: {
+    zIndex: 1,
+  },
+  form: {
+    paddingHorizontal: 24,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#24504c', // cor padronizada
   },
   loginButton: {
-    marginTop: theme.spacing.md,
+    marginBottom: 24,
+    backgroundColor: '#24504c', // cor padronizada
   },
-  demoInfo: {
-    marginTop: theme.spacing.xl,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.medium,
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.secondary,
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  demoText: {
-    fontSize: theme.typography.small,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.colors.border,
   },
-  demoCredentials: {
-    fontSize: theme.typography.small,
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
     color: theme.colors.textSecondary,
-    fontFamily: 'monospace',
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 32,
+  },
+  googleIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  googleText: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 24,
+  },
+  registerText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: theme.colors.textSecondary,
+  },
+  registerLink: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#24504c', // cor padronizada
   },
 });

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Dimensions } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,6 +61,80 @@ export default function DashboardScreen() {
     router.push('/profile');
   };
 
+  const [showMonthFilter, setShowMonthFilter] = useState(false);
+  const [expandExtraCards, setExpandExtraCards] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState({
+    month: 6, // julho (0-based)
+    year: 2025,
+  });
+  const monthFilterAnim = useRef(new Animated.Value(0)).current;
+  const extraCardsAnim = useRef(new Animated.Value(0)).current;
+
+  const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+  function getMonthLabel(offset = 0) {
+    let m = currentMonth.month + offset;
+    let y = currentMonth.year;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    return `${months[m]} ${y}`;
+  }
+
+  function goToPrevMonth() {
+    setCurrentMonth(prev => {
+      let m = prev.month - 1;
+      let y = prev.year;
+      if (m < 0) { m = 11; y -= 1; }
+      return { month: m, year: y };
+    });
+  }
+  function goToNextMonth() {
+    setCurrentMonth(prev => {
+      let m = prev.month + 1;
+      let y = prev.year;
+      if (m > 11) { m = 0; y += 1; }
+      return { month: m, year: y };
+    });
+  }
+
+  function handleMonthFilterToggle() {
+    if (!showMonthFilter) {
+      setShowMonthFilter(true);
+      Animated.timing(monthFilterAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: false,
+        easing: Easing.out(Easing.ease),
+      }).start();
+    } else {
+      Animated.timing(monthFilterAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+        easing: Easing.in(Easing.ease),
+      }).start(() => setShowMonthFilter(false));
+    }
+  }
+
+  function handleExpandToggle() {
+    if (!expandExtraCards) {
+      setExpandExtraCards(true);
+      Animated.timing(extraCardsAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: false,
+        easing: Easing.out(Easing.ease),
+      }).start();
+    } else {
+      Animated.timing(extraCardsAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+        easing: Easing.in(Easing.ease),
+      }).start(() => setExpandExtraCards(false));
+    }
+  }
+
   return (
     <>
       <View style={styles.container}>
@@ -76,15 +151,16 @@ export default function DashboardScreen() {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Filtragem  */}
         <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.filterMonth} activeOpacity={0.7}>
-            <Text style={styles.filterMonthText}>{`julho 2025`}</Text>
-            <ChevronDown size={18} color={theme.colors.text} />
+          <TouchableOpacity style={styles.filterMonth} activeOpacity={0.7} onPress={handleMonthFilterToggle}>
+            <Text style={styles.filterMonthText}>{getMonthLabel()}</Text>
+            <ChevronDown size={18} color={theme.colors.text} style={{ transform: [{ rotate: showMonthFilter ? '180deg' : '0deg' }] }} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterExpand} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.filterExpand} activeOpacity={0.7} onPress={handleExpandToggle}>
             <Text style={styles.filterExpandText}>Expandir</Text>
-            <ChevronDown size={18} color={theme.colors.text} />
+            <ChevronDown size={18} color={theme.colors.text} style={{ transform: [{ rotate: expandExtraCards ? '180deg' : '0deg' }] }} />
           </TouchableOpacity>
         </View>
+      
         {/* Balance Card */}
         <LinearGradient
           colors={['#006B5B', '#00A085', '#4DD0A7']}
@@ -97,8 +173,39 @@ export default function DashboardScreen() {
             R$ {totalBalance.toFixed(2).replace('.', ',')}
           </Text>
         </LinearGradient>
-
-
+{/* linha para filtro com mes ( button arrow right  maio 2025  (mes atual) julho 2025 arrow left  */}
+        <Animated.View style={{
+          overflow: 'hidden',
+          height: monthFilterAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] }),
+          opacity: monthFilterAnim,
+          marginBottom: showMonthFilter ? styles.monthFilterBox.marginBottom : 0,
+        }}>
+          {showMonthFilter && (
+            <View style={styles.monthFilterBox}>
+              <TouchableOpacity style={styles.arrowButton} onPress={goToPrevMonth}>
+                <ChevronDown size={20} color={theme.colors.text} style={{ transform: [{ rotate: '90deg' }] }} />
+              </TouchableOpacity>
+              {/* Mês anterior */}
+              <View style={styles.monthCol}>
+                <Text style={styles.monthColMonth}>{months[(currentMonth.month - 1 + 12) % 12]}</Text>
+                <Text style={styles.monthColYear}>{(currentMonth.month - 1) < 0 ? currentMonth.year - 1 : currentMonth.year}</Text>
+              </View>
+              {/* Mês atual */}
+              <View style={[styles.monthCol, styles.monthColCurrent]}>
+                <Text style={[styles.monthColMonth, styles.monthColMonthCurrent]}>{months[currentMonth.month]}</Text>
+                <Text style={[styles.monthColYear, styles.monthColYearCurrent]}>{currentMonth.year}</Text>
+              </View>
+              {/* Mês seguinte */}
+              <View style={styles.monthCol}>
+                <Text style={styles.monthColMonth}>{months[(currentMonth.month + 1) % 12]}</Text>
+                <Text style={styles.monthColYear}>{(currentMonth.month + 1) > 11 ? currentMonth.year + 1 : currentMonth.year}</Text>
+              </View>
+              <TouchableOpacity style={styles.arrowButton} onPress={goToNextMonth}>
+                <ChevronDown size={20} color={theme.colors.text} style={{ transform: [{ rotate: '-90deg' }] }} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </Animated.View>
         {/* Income and Expenses (linha 1) */}
         <View style={styles.incomeExpenseRow}>
           <Card style={[styles.incomeExpenseCard, styles.incomeCard]}>
@@ -139,11 +246,61 @@ export default function DashboardScreen() {
             <Text style={styles.periodText}>Este mês</Text>
           </Card>
         </View>
+        {/* Extra cards ao expandir */}
+        <Animated.View style={{
+          overflow: 'hidden',
+          height: extraCardsAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 2 * 120] }), // 2 linhas de cards, 120px cada
+          opacity: extraCardsAnim,
+        }}>
+          {expandExtraCards && (
+            <>
+              <View style={styles.incomeExpenseRow}>
+                <Card style={[styles.incomeExpenseCard, styles.incomeCard]}>
+                  <View style={styles.incomeExpenseHeader}>
+                    <TrendingUp size={20} color={theme.colors.income} />
+                    <Text style={styles.incomeExpenseTitle}>Para Receber</Text>
+                  </View>
+                  <Text style={styles.incomeAmount}>R$ 0,00</Text>
+                  <Text style={styles.periodText}>Este mês</Text>
+                </Card>
+                <Card style={[styles.incomeExpenseCard, styles.expenseCard]}>
+                  <View style={styles.incomeExpenseHeader}>
+                    <TrendingDown size={20} color={theme.colors.expense} />
+                    <Text style={styles.incomeExpenseTitle}>Para Pagar</Text>
+                  </View>
+                  <Text style={styles.expenseAmount}>R$ 0,00</Text>
+                  <Text style={styles.periodText}>Este mês</Text>
+                </Card>
+              </View>
+              <View style={styles.incomeExpenseRow}>
+                <Card style={[styles.incomeExpenseCard, styles.incomeCard]}>
+                  <View style={styles.incomeExpenseHeader}>
+                    <TrendingUp size={20} color={theme.colors.income} />
+                    <Text style={styles.incomeExpenseTitle}>Saldo Projetado</Text>
+                  </View>
+                  <Text style={styles.incomeAmount}>R$ 0,00</Text>
+                  <Text style={styles.periodText}>Este mês</Text>
+                </Card>
+                <Card style={[styles.incomeExpenseCard, styles.expenseCard]}>
+                  <View style={styles.incomeExpenseHeader}>
+                    <TrendingDown size={20} color={theme.colors.expense} />
+                    <Text style={styles.incomeExpenseTitle}>Balanço</Text>
+                  </View>
+                  <Text style={styles.expenseAmount}>R$ 0,00</Text>
+                  <Text style={styles.periodText}>Este mês</Text>
+                </Card>
+              </View>
+            </>
+          )}
+        </Animated.View>
 
         {/* Cards Overview */}
         {data.cards.length > 0 && (
           <Card style={styles.cardsCard}>
-            <Text style={styles.sectionTitle}>Cartões</Text>
+            <Text style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleThin}>Meus </Text>
+              <Text style={styles.sectionTitleBold}>Cartões</Text>
+            </Text>
             {data.cards.map(card => {
               const utilization = (card.currentSpending / card.limit) * 100;
               return (
@@ -242,7 +399,6 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.medium,
-    backgroundColor: theme.colors.surface,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {
@@ -267,7 +423,6 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.medium,
-    backgroundColor: theme.colors.surface,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {
@@ -363,6 +518,14 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
+  sectionTitleThin: {
+    fontWeight: '400',
+    color: theme.colors.text,
+  },
+  sectionTitleBold: {
+    fontWeight: 'bold',
+    color: theme.colors.text,
+  },
   cardItem: {
     marginBottom: theme.spacing.md,
   },
@@ -431,5 +594,54 @@ const styles = StyleSheet.create({
   alertText: {
     fontSize: theme.typography.regular,
     color: '#856404',
+  },
+  monthFilterBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.medium,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.sm,
+  },
+  arrowButton: {
+    padding: theme.spacing.xs,
+  },
+  monthText: {
+    fontSize: theme.typography.medium,
+    color: theme.colors.textSecondary,
+    marginHorizontal: theme.spacing.xs,
+  },
+  monthCol: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    gap: 2,
+  },
+  monthColMonth: {
+    fontSize: theme.typography.medium,
+    color: theme.colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  monthColYear: {
+    fontSize: theme.typography.small,
+    color: theme.colors.textSecondary,
+    opacity: 0.7,
+    marginTop: -2,
+  },
+  monthColCurrent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.small,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+  },
+  monthColMonthCurrent: {
+    color: theme.colors.text,
+    fontWeight: 'bold',
+  },
+  monthColYearCurrent: {
+    color: theme.colors.text,
+    fontWeight: 'bold',
   },
 });
