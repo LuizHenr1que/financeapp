@@ -8,21 +8,12 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Header } from '@/components/Header';
 import { Transaction, Category, Card as CardType } from '@/types';
+import { useRouter } from 'expo-router';
 
 export default function TransactionsScreen() {
-  const { data, addTransaction, updateTransaction, deleteTransaction } = useData();
-  const [isEditing, setIsEditing] = useState(false);
+  const { data, updateTransaction, deleteTransaction } = useData();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [formData, setFormData] = useState({
-    type: 'expense' as 'income' | 'expense',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    categoryId: '',
-    paymentMethod: 'cash' as 'cash' | 'pix' | 'card',
-    cardId: '',
-    installments: '',
-    description: '',
-  });
+  const router = useRouter();
 
   const handleViewPress = () => {
     console.log('Visualização pressionada');
@@ -38,17 +29,7 @@ export default function TransactionsScreen() {
 
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction);
-    setFormData({
-      type: transaction.type,
-      amount: transaction.amount.toString(),
-      date: transaction.date,
-      categoryId: transaction.categoryId,
-      paymentMethod: transaction.paymentMethod,
-      cardId: transaction.cardId || '',
-      installments: transaction.installments?.toString() || '',
-      description: transaction.description,
-    });
-    setIsEditing(true);
+    // Aqui você pode navegar para uma tela de edição, se desejar
   };
 
   const handleDelete = (transactionId: string) => {
@@ -66,56 +47,6 @@ export default function TransactionsScreen() {
     );
   };
 
-  const handleSave = async () => {
-    if (!formData.amount || !formData.categoryId || !formData.description.trim()) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios');
-      return;
-    }
-
-    const amount = parseFloat(formData.amount);
-    if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Erro', 'Valor deve ser um número válido maior que zero');
-      return;
-    }
-
-    try {
-      const transactionData = {
-        type: formData.type,
-        amount,
-        date: formData.date,
-        categoryId: formData.categoryId,
-        paymentMethod: formData.paymentMethod,
-        cardId: formData.paymentMethod === 'card' ? formData.cardId : undefined,
-        installments: formData.installments ? parseInt(formData.installments) : undefined,
-        description: formData.description,
-      };
-
-      if (editingTransaction) {
-        await updateTransaction(editingTransaction.id, transactionData);
-      } else {
-        await addTransaction(transactionData);
-      }
-      resetForm();
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar a transação');
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      type: 'expense',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      categoryId: '',
-      paymentMethod: 'cash',
-      cardId: '',
-      installments: '',
-      description: '',
-    });
-    setEditingTransaction(null);
-    setIsEditing(false);
-  };
-
   const getCategory = (categoryId: string): Category | undefined => {
     return data.categories.find(cat => cat.id === categoryId);
   };
@@ -123,9 +54,6 @@ export default function TransactionsScreen() {
   const getCard = (cardId: string): CardType | undefined => {
     return data.cards.find(card => card.id === cardId);
   };
-
-  const filteredCategories = data.categories.filter(cat => cat.type === formData.type);
-  const availableCards = data.cards;
 
   const sortedTransactions = [...data.transactions].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -145,171 +73,6 @@ export default function TransactionsScreen() {
     }
   };
 
-  if (isEditing) {
-    return (
-      <View style={styles.container}>
-        <StatusBar backgroundColor={theme.colors.primary} barStyle="light-content" />
-        <View style={styles.editHeader}>
-          <Text style={styles.editTitle}>
-            {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
-          </Text>
-          <TouchableOpacity onPress={resetForm} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Fechar</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          <Card>
-            <Text style={styles.sectionTitle}>Tipo de Transação</Text>
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  formData.type === 'income' && styles.typeButtonActive,
-                ]}
-                onPress={() => {
-                  setFormData({ ...formData, type: 'income', categoryId: '' });
-                }}
-              >
-                <TrendingUp size={20} color={formData.type === 'income' ? theme.colors.title : theme.colors.income} />
-                <Text style={[
-                  styles.typeButtonText,
-                  formData.type === 'income' && styles.typeButtonTextActive,
-                ]}>
-                  Receita
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  formData.type === 'expense' && styles.typeButtonActive,
-                ]}
-                onPress={() => {
-                  setFormData({ ...formData, type: 'expense', categoryId: '' });
-                }}
-              >
-                <TrendingDown size={20} color={formData.type === 'expense' ? theme.colors.title : theme.colors.expense} />
-                <Text style={[
-                  styles.typeButtonText,
-                  formData.type === 'expense' && styles.typeButtonTextActive,
-                ]}>
-                  Despesa
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Input
-              label="Valor (R$)*"
-              value={formData.amount}
-              onChangeText={(text) => setFormData({ ...formData, amount: text })}
-              placeholder="0,00"
-              keyboardType="numeric"
-            />
-
-            <Input
-              label="Data*"
-              value={formData.date}
-              onChangeText={(text) => setFormData({ ...formData, date: text })}
-              placeholder="YYYY-MM-DD"
-            />
-
-            <Input
-              label="Descrição*"
-              value={formData.description}
-              onChangeText={(text) => setFormData({ ...formData, description: text })}
-              placeholder="Ex: Compras no supermercado"
-            />
-
-            <Text style={styles.sectionTitle}>Categoria*</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {filteredCategories.map(category => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryOption,
-                    { backgroundColor: category.color },
-                    formData.categoryId === category.id && styles.categoryOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, categoryId: category.id })}
-                >
-                  <Text style={styles.categoryOptionText}>{category.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <Text style={styles.sectionTitle}>Forma de Pagamento</Text>
-            <View style={styles.paymentRow}>
-              {[
-                { value: 'cash', label: 'Dinheiro' },
-                { value: 'pix', label: 'PIX' },
-                { value: 'card', label: 'Cartão' },
-              ].map(payment => (
-                <TouchableOpacity
-                  key={payment.value}
-                  style={[
-                    styles.paymentButton,
-                    formData.paymentMethod === payment.value && styles.paymentButtonActive,
-                  ]}
-                  onPress={() => setFormData({ ...formData, paymentMethod: payment.value as any })}
-                >
-                  <Text style={[
-                    styles.paymentButtonText,
-                    formData.paymentMethod === payment.value && styles.paymentButtonTextActive,
-                  ]}>
-                    {payment.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {formData.paymentMethod === 'card' && (
-              <>
-                <Text style={styles.sectionTitle}>Cartão</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                  {availableCards.map(card => (
-                    <TouchableOpacity
-                      key={card.id}
-                      style={[
-                        styles.cardOption,
-                        { backgroundColor: card.color },
-                        formData.cardId === card.id && styles.cardOptionSelected,
-                      ]}
-                      onPress={() => setFormData({ ...formData, cardId: card.id })}
-                    >
-                      <Text style={styles.cardOptionText}>{card.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                <Input
-                  label="Parcelas"
-                  value={formData.installments}
-                  onChangeText={(text) => setFormData({ ...formData, installments: text })}
-                  placeholder="1"
-                  keyboardType="numeric"
-                />
-              </>
-            )}
-
-            <View style={styles.buttonRow}>
-              <Button
-                title="Cancelar"
-                onPress={resetForm}
-                variant="outline"
-                style={styles.button}
-              />
-              <Button
-                title="Salvar"
-                onPress={handleSave}
-                style={styles.button}
-              />
-            </View>
-          </Card>
-        </ScrollView>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <Header 
@@ -318,19 +81,17 @@ export default function TransactionsScreen() {
         onFilterPress={handleFilterPress}
         onSearchPress={handleSearchPress}
       />
-
       <ScrollView style={styles.content}>
         {/* Add Transaction Button */}
         <Card style={styles.addButtonCard}>
           <TouchableOpacity
-            onPress={() => setIsEditing(true)}
+            onPress={() => router.push('/(tabs)/addTransaction')}
             style={styles.addTransactionButton}
           >
             <Plus size={24} color={theme.colors.primary} />
             <Text style={styles.addTransactionText}>Adicionar Nova Transação</Text>
           </TouchableOpacity>
         </Card>
-
         {/* Transactions List */}
         {sortedTransactions.length === 0 ? (
           <Card style={styles.emptyCard}>
@@ -344,7 +105,6 @@ export default function TransactionsScreen() {
           sortedTransactions.map(transaction => {
             const category = getCategory(transaction.categoryId);
             const card = transaction.cardId ? getCard(transaction.cardId) : null;
-            
             return (
               <Card key={transaction.id} style={styles.transactionItem}>
                 <View style={styles.transactionHeader}>
@@ -393,7 +153,6 @@ export default function TransactionsScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-
                 <View style={styles.transactionFooter}>
                   <Text style={styles.paymentMethod}>
                     {formatPaymentMethod(transaction.paymentMethod)}

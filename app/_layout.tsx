@@ -11,21 +11,10 @@ import { MenuModalProvider } from '@/context/MenuModalContext';
 import { TransactionTypeModalProvider } from '@/context/TransactionTypeModalContext';
 import { Loading } from '@/components/Loading';
 import { useLoading } from '@/context/LoadingContext';
+import AppRoutes from './AppRoutes';
 
 function AppContent() {
-  const { isLoading } = useLoading();
-
-  return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-      <Loading visible={isLoading} />
-    </>
-  );
+  return <AppRoutes />;
 }
 
 export default function RootLayout() {

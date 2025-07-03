@@ -1,0 +1,696 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  StatusBar,
+  Alert,
+  TextInput,
+  Platform,
+} from 'react-native';
+import { ArrowLeft, ChevronDown } from 'lucide-react-native';
+import { useData } from '@/context/DataContext';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import TransactionTypeModal from '@/components/TransactionTypeModal';
+import { theme } from '@/theme';
+import { Input } from '@/components/Input';
+import { Button } from '@/components/Button';
+import InputLogin from '@/components/InputLogin';
+import { Modalize } from 'react-native-modalize';
+import { Calendar } from 'react-native-calendars';
+
+// Função utilitária para data local no formato YYYY-MM-DD
+function getLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export default function AddTransactionScreen() {
+  const { addTransaction, data } = useData();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams();
+
+  const [formData, setFormData] = useState({
+    type: 'income' as 'income' | 'expense',
+    amount: '',
+    title: '',
+    date: getLocalDateString(new Date()),
+    categoryId: '',
+    paymentMethod: 'cash' as 'cash' | 'pix' | 'card',
+    cardId: '',
+    installments: '',
+    description: '',
+    launchType: 'unico' as 'unico' | 'recorrente' | 'parcelado',
+  });
+  const [loading, setLoading] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [calendarTempDate, setCalendarTempDate] = useState(new Date(formData.date));
+  const typeModalRef = useRef<any>(null);
+  const calendarModalRef = useRef<Modalize>(null);
+
+  const TRANSACTION_TYPES = [
+    { value: 'income', label: 'Receita' },
+    { value: 'expense', label: 'Despesa' },
+  ];
+  const selectedType = TRANSACTION_TYPES.find(t => t.value === formData.type);
+
+  const filteredCategories = data.categories.filter(cat => cat.type === formData.type);
+  const availableCards = data.cards;
+
+  useEffect(() => {
+    if (params?.type === 'income' || params?.type === 'expense') {
+      setFormData(prev => ({ ...prev, type: params.type as 'income' | 'expense', categoryId: '' }));
+    }
+  }, [params?.type]);
+
+  const handleSave = async () => {
+    if (!formData.amount || !formData.categoryId || !formData.description.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+    const amount = parseFloat(formData.amount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Erro', 'Valor deve ser um número válido maior que zero');
+      return;
+    }
+    setLoading(true);
+    try {
+      const transactionData = {
+        type: formData.type,
+        amount,
+        date: formData.date,
+        categoryId: formData.categoryId,
+        paymentMethod: formData.paymentMethod,
+        cardId: formData.paymentMethod === 'card' ? formData.cardId : undefined,
+        installments: formData.installments ? parseInt(formData.installments) : undefined,
+        description: formData.description,
+      };
+      await addTransaction(transactionData);
+      router.back();
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível salvar a transação');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: formData.type === 'income' ? theme.colors.income : theme.colors.expense },
+        { paddingTop: insets.top },
+      ]}
+    >
+      <StatusBar
+        backgroundColor={formData.type === 'income' ? theme.colors.income : theme.colors.expense}
+        barStyle="dark-content"
+      />
+
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        <View style={styles.topBarSide}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.topBarButton}>
+            <ArrowLeft size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.topBarCenter}>
+          <TouchableOpacity style={styles.typeSelectTop} onPress={() => typeModalRef.current?.open()}>
+            <Text style={styles.typeSelectTopText}>{selectedType?.label}</Text>
+            <ChevronDown size={20} color="#fff" style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.topBarSide}>
+          <TouchableOpacity style={styles.topBarButton}>
+            <Text style={styles.topBarApply}>Aplicar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Modal customizado para seleção do tipo de transação */}
+      <TransactionTypeModal
+        ref={typeModalRef}
+        onClose={() => {}}
+      />
+
+      {/* Large Editable Value Input */}
+      <View style={styles.valueSection}>
+        <Text style={styles.valueLabel}>Valor</Text>
+        <View style={styles.valueRow}>
+          <Text style={styles.valueCurrency}>R$</Text>
+          <TextInput
+            style={styles.valueInput}
+            value={formData.amount}
+            onChangeText={text => setFormData({ ...formData, amount: text.replace(/[^0-9,]/g, '') })}
+            placeholder="0,00"
+            placeholderTextColor="#fff"
+            keyboardType="numeric"
+            maxLength={12}
+            textAlign="left"
+            selectionColor="#fff"
+          />
+        </View>
+      </View>
+
+      {/* Novo Formulário */}
+      <ScrollView style={[styles.content, { backgroundColor: theme.colors.surface }]} keyboardShouldPersistTaps="handled">
+        {/* Título */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Título</Text>
+          <InputLogin
+            value={formData.title || ''}
+            onChangeText={text => setFormData({ ...formData, title: text })}
+            placeholder="Ex: Salário, Mercado, etc."
+            containerStyle={{ marginBottom: 0 }}
+          />
+        </View>
+        {/* Descrição */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Descrição</Text>
+          <InputLogin
+            value={formData.description}
+            onChangeText={text => setFormData({ ...formData, description: text })}
+            placeholder="Adicione uma descrição"
+            containerStyle={{ marginBottom: 0 }}
+          />
+        </View>
+        {/* Data */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Data</Text>
+          <View style={styles.dateButtonRow}>
+            <Button
+              title="Hoje"
+              onPress={() => setFormData({ ...formData, date: getLocalDateString(new Date()) })}
+              variant={formData.date === getLocalDateString(new Date()) ? 'primary' : 'outline'}
+              size="small"
+              style={{
+                ...styles.dateButton,
+                flex: 0.7,
+                ...(formData.date === getLocalDateString(new Date()) ? styles.dateButtonActive : {}),
+              }}
+            />
+            <Button
+              title="Ontem"
+              onPress={() => {
+                const ontem = new Date();
+                ontem.setDate(ontem.getDate() - 1);
+                setFormData({ ...formData, date: getLocalDateString(ontem) });
+              }}
+              variant={(() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return formData.date === getLocalDateString(ontem) ? 'primary' : 'outline'; })()}
+              size="small"
+              style={{
+                ...styles.dateButton,
+                flex: 0.7,
+                ...((() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return formData.date === getLocalDateString(ontem) ? styles.dateButtonActive : {}; })()),
+              }}
+            />
+            <Button
+              title="Selecionar Data"
+              onPress={() => {
+                setCalendarTempDate(new Date(formData.date));
+                calendarModalRef.current?.open();
+              }}
+              variant={formData.date !== getLocalDateString(new Date()) && formData.date !== (() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return getLocalDateString(ontem); })() ? 'primary' : 'outline'}
+              size="small"
+              style={{
+                ...styles.dateButton,
+                flex: 1.3,
+                ...(formData.date !== getLocalDateString(new Date()) && formData.date !== (() => { const ontem = new Date(); ontem.setDate(ontem.getDate() - 1); return getLocalDateString(ontem); })() ? styles.dateButtonActive : {}),
+              }}
+            />
+          </View>
+        </View>
+        {/* Categoria */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Categoria</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            {filteredCategories.map(category => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryOption,
+                  { backgroundColor: category.color },
+                  formData.categoryId === category.id && styles.categoryOptionSelected,
+                ]}
+                onPress={() => setFormData({ ...formData, categoryId: category.id })}
+              >
+                <Text style={styles.categoryOptionText}>{category.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+        {/* Conta ou Cartão */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Conta ou Cartão</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            {availableCards.map(card => (
+              <TouchableOpacity
+                key={card.id}
+                style={[
+                  styles.cardOption,
+                  { backgroundColor: card.color },
+                  formData.cardId === card.id && styles.cardOptionSelected,
+                ]}
+                onPress={() => setFormData({ ...formData, cardId: card.id })}
+              >
+                <Text style={styles.cardOptionText}>{card.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+        {/* Lançamento */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Lançamento</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Button
+              title="Único"
+              onPress={() => setFormData({ ...formData, launchType: 'unico' })}
+              variant={formData.launchType === 'unico' ? 'primary' : 'outline'}
+              size="small"
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Recorrente"
+              onPress={() => setFormData({ ...formData, launchType: 'recorrente' })}
+              variant={formData.launchType === 'recorrente' ? 'primary' : 'outline'}
+              size="small"
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Parcelado"
+              onPress={() => setFormData({ ...formData, launchType: 'parcelado' })}
+              variant={formData.launchType === 'parcelado' ? 'primary' : 'outline'}
+              size="small"
+              style={{ flex: 1 }}
+            />
+          </View>
+        </View>
+        {/* Botões de ação */}
+        <View style={styles.buttonRow}>
+          <Button
+            title="Cancelar"
+            onPress={() => router.back()}
+            variant="outline"
+            disabled={loading}
+            style={{ marginRight: 8 }}
+          />
+          <Button
+            title={loading ? 'Salvando...' : 'Salvar'}
+            onPress={handleSave}
+            disabled={loading}
+          />
+        </View>
+      </ScrollView>
+      {/* Modal de Calendário */}
+      <Modalize
+        ref={calendarModalRef}
+        adjustToContentHeight
+        handleStyle={{ backgroundColor: theme.colors.border }}
+        modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+        onClose={() => setCalendarVisible(false)}
+      >
+        <Text style={styles.calendarModalTitle}>Selecione a data</Text>
+        <Calendar
+          current={getLocalDateString(calendarTempDate)}
+          onDayPress={day => {
+            setCalendarTempDate(new Date(day.dateString));
+          }}
+          markedDates={{
+            [getLocalDateString(calendarTempDate)]: { selected: true, selectedColor: theme.colors.primary }
+          }}
+          theme={{
+            backgroundColor: theme.colors.surface,
+            calendarBackground: theme.colors.surface,
+            textSectionTitleColor: theme.colors.textSecondary,
+            selectedDayBackgroundColor: theme.colors.primary,
+            selectedDayTextColor: theme.colors.surface,
+            todayTextColor: theme.colors.primary,
+            dayTextColor: theme.colors.text,
+            textDisabledColor: theme.colors.border,
+            arrowColor: theme.colors.primary,
+            monthTextColor: theme.colors.title,
+            indicatorColor: theme.colors.primary,
+            textDayFontWeight: '500',
+            textMonthFontWeight: 'bold',
+            textDayHeaderFontWeight: '600',
+            textDayFontSize: 16,
+            textMonthFontSize: 18,
+            textDayHeaderFontSize: 14,
+          }}
+        />
+        {/* Linha separadora */}
+        <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 16 }} />
+        {/* Botões Hoje/Ontem */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
+          <Button
+            title="Hoje"
+            onPress={() => setCalendarTempDate(new Date())}
+            variant={(() => {
+              const hoje = getLocalDateString(new Date());
+              return getLocalDateString(calendarTempDate) === hoje ? 'primary' : 'outline';
+            })()}
+            size="small"
+            style={{ flex: 1 }}
+          />
+          <Button
+            title="Ontem"
+            onPress={() => {
+              const ontem = new Date();
+              ontem.setDate(ontem.getDate() - 1);
+              setCalendarTempDate(ontem);
+            }}
+            variant={(() => {
+              const ontem = new Date();
+              ontem.setDate(ontem.getDate() - 1);
+              return getLocalDateString(calendarTempDate) === getLocalDateString(ontem) ? 'primary' : 'outline';
+            })()}
+            size="small"
+            style={{ flex: 1 }}
+          />
+        </View>
+        {/* Botão Salvar */}
+        <View style={{ alignItems: 'center' }}>
+          <Button
+            title="Salvar"
+            onPress={() => {
+              const selectedDate = getLocalDateString(calendarTempDate);
+              setFormData({ ...formData, date: selectedDate });
+              calendarModalRef.current?.close();
+            }}
+            style={{ minWidth: 140 }}
+          />
+        </View>
+      </Modalize>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8, 
+    paddingVertical: 12,
+  },
+  topBarSide: {
+    minWidth: 70, 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topBarButton: {
+    minWidth: 60,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  topBarCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  typeSelectTop: {
+    backgroundColor: theme.colors.secondary,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  typeSelectTopText: {
+    color: theme.colors.title,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  topBarApply: {
+    color: theme.colors.title,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  valueSection: {
+    alignItems: 'flex-start',
+    marginBottom: 24,
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+  valueLabel: {
+    color: theme.colors.title,
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: 'left',
+    width: '100%',
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  valueCurrency: {
+    color: theme.colors.title,
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginRight: 4,
+  },
+  valueInput: {
+    color: theme.colors.title,
+    fontSize: 40,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    minWidth: 120,
+    paddingVertical: 0,
+    paddingHorizontal: 4,
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: theme.colors.background,
+    color: theme.colors.text,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  categoryScroll: {
+    marginBottom: 24,
+  },
+  categoryOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  categoryOptionSelected: {
+    borderColor: theme.colors.primary,
+  },
+  categoryOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    gap: 12,
+  },
+  paymentButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+  },
+  paymentButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  paymentButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  paymentButtonTextActive: {
+    color: theme.colors.surface,
+  },
+  cardOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  cardOptionSelected: {
+    borderColor: theme.colors.primary,
+  },
+  cardOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 32,
+  },
+  button: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 24,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontWeight: '700',
+    fontSize: 16,
+    color: theme.colors.surface,
+  },
+  buttonOutline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  buttonOutlineText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  typeModalSheet: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    alignItems: 'center',
+  },
+  typeModalHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: theme.colors.border,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  typeModalRoot: {
+    zIndex: 9999,
+    elevation: 9999,
+  },
+  typeModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  typeModalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  typeModalOptionSelected: {
+    backgroundColor: theme.colors.primarySoft,
+  },
+  typeModalOptionText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '600',
+  },
+  calendarModalSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    alignItems: 'center',
+  },
+  calendarModalHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: theme.colors.border,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  calendarModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  dateButtonRow: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+  },
+  dateButton: {
+    flex: 0.4,
+    borderRadius: 18,
+    minHeight: 36,
+    paddingVertical: 6,
+    paddingHorizontal: 0,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+
+  },
+  dateButtonActive: {
+    borderColor: theme.colors.primary,
+  },
+});

@@ -128,6 +128,12 @@ export default function TabLayout() {
           href: null, // Hide from tabs
         }}
       />
+      <Tabs.Screen
+        name="addTransaction"
+        options={{
+          href: null, // Hide from tabs
+        }}
+      />
     </Tabs>
   );
 }

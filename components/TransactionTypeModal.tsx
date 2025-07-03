@@ -16,7 +16,18 @@ export const TransactionTypeModal = forwardRef<Modalize, TransactionTypeModalPro
     if (ref && 'current' in ref && ref.current) {
       ref.current.close();
     }
-    router.push(route as any);
+    setTimeout(() => {
+      router.push(route as any);
+    }, 200); // delay para animação do modal
+  };
+
+  const handleTransactionTypeSelect = (type: 'income' | 'expense') => {
+    if (ref && 'current' in ref && ref.current) {
+      ref.current.close();
+    }
+    setTimeout(() => {
+      router.push({ pathname: '/addTransaction', params: { type } });
+    }, 200);
   };
 
   const transactionTypes = [
@@ -40,13 +51,6 @@ export const TransactionTypeModal = forwardRef<Modalize, TransactionTypeModalPro
       subtitle: 'Entre contas',
       color: theme.colors.warning,
       route: '/add?type=transfer'
-    },
-    { 
-      icon: CreditCard, 
-      title: 'Cartões',
-      subtitle: 'Gerenciar cartões',
-      color: theme.colors.primary,
-      route: '/cards'
     },
   ];
 
@@ -76,11 +80,16 @@ export const TransactionTypeModal = forwardRef<Modalize, TransactionTypeModalPro
         <View style={styles.listContainer}>
           {transactionTypes.map((item, index) => {
             const IconComponent = item.icon;
+            const isAddTransaction = item.route.startsWith('/add?type=');
             return (
               <TouchableOpacity
                 key={index}
                 style={styles.listItem}
-                onPress={() => handleNavigation(item.route)}
+                onPress={() =>
+                  isAddTransaction
+                    ? handleTransactionTypeSelect(item.route.includes('income') ? 'income' : 'expense')
+                    : handleNavigation(item.route)
+                }
               >
                 <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
                   <IconComponent size={24} color={item.color} />
