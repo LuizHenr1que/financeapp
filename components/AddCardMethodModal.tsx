@@ -110,11 +110,7 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
                 setStep('manual');
                 setTimeout(() => modalizeRef.current?.open(), 10);
               }}
-              cardButtonStyle={styles.cardButton}
-              disabledCardButtonStyle={styles.disabledCardButton}
-              buttonStyle={styles.button}
-              buttonContentStyle={styles.buttonContent}
-              buttonDescStyle={styles.buttonDesc}
+            
             />
           ) : (
             <>
@@ -339,51 +335,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     color: theme.colors.text,
-    textAlign: 'left', // alinhado à esquerda
+    textAlign: 'left',
     marginBottom: 24,
     fontWeight: '600',
-  },
-  cardButton: {
-    marginBottom: 16,
-    borderWidth: 1.5,
-    borderColor: theme.colors.primary,
-    backgroundColor: 'transparent',
-    borderRadius: 16,
-    padding: 0,
-  },
-  disabledCardButton: {
-    // para reforçar visual de desabilitado
-    backgroundColor: theme.colors.surface,
-    // pode adicionar sombra/blur se desejar, mas React Native puro não tem blur nativo
-    // para efeito de blur real, seria necessário usar expo-blur ou similar
-  },
-  button: {
-    padding: 20,
-    alignItems: 'flex-start',
-    width: '100%',
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-  },
-  buttonDesc: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    textAlign: 'left', // alinhado à esquerda
-    opacity: 0.8,
-    width: '100%',
-  },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   selectInput: {
     borderWidth: 1,
@@ -400,6 +354,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: '500',
     marginLeft: 2,
+  },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   accountOption: {
     paddingVertical: 16,

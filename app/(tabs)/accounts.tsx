@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { theme } from '@/theme';
 import { Card } from '@/components/Card';
@@ -6,6 +6,9 @@ import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { Plus, Banknote, ChevronRight, CreditCard, Calendar } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Modalize } from 'react-native-modalize';
+import { AddCardMethodOptions } from '@/components/AddCardMethodOptions';
+import { AddAccountManualModal, AddAccountManualModalRef } from '@/components/AddAccountManualModal';
 
 const mockAccounts = [
   {
@@ -16,9 +19,13 @@ const mockAccounts = [
 ];
 
 export default function AccountsScreen() {
+  const modalizeRef = useRef<Modalize>(null);
+  const manualModalRef = useRef<AddAccountManualModalRef>(null);
+  const [step, setStep] = useState<'manual' | null>(null);
+
   const handleAddAccount = () => {
-    // Aqui você pode abrir um modal ou navegar para uma tela de cadastro
-    alert('Adicionar nova conta (mock)');
+    setStep(null);
+    setTimeout(() => modalizeRef.current?.open(), 10);
   };
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -77,6 +84,30 @@ export default function AccountsScreen() {
           ))
         )}
       </ScrollView>
+      <Modalize
+        ref={modalizeRef}
+        modalHeight={320}
+        handleStyle={{ backgroundColor: theme.colors.border }}
+        modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+        onClose={() => setStep(null)}
+      >
+        <AddCardMethodOptions
+          title="Como você deseja cadastrar sua nova conta bancária?"
+          manualTitle="Conta manual"
+          manualDesc="Cadastre suas transações manualmente"
+          openFinanceTitle="Open Finance"
+          openFinanceDesc="Em breve: conecte sua conta via Open Finance"
+          onManualPress={() => {
+            console.log('Conta manual clicada');
+            setStep('manual');
+            setTimeout(() => {
+              modalizeRef.current?.close();
+              manualModalRef.current?.open();
+            }, 300);
+          }}
+        />
+      </Modalize>
+      <AddAccountManualModal ref={manualModalRef} />
     </View>
   );
 }
