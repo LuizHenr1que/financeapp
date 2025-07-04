@@ -22,12 +22,32 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateEmail = (value: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(value);
+  };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
-      return;
+    let hasError = false;
+    if (!email) {
+      setEmailError('Digite o login');
+      hasError = true;
+    } else if (!validateEmail(email)) {
+      setEmailError('Digite um e-mail válido');
+      hasError = true;
+    } else {
+      setEmailError('');
     }
+    if (!password) {
+      setPasswordError('Digite a senha');
+      hasError = true;
+    } else {
+      setPasswordError('');
+    }
+    if (hasError) return;
 
     setIsLoading(true);
     setTimeout(() => {
@@ -71,18 +91,21 @@ export default function LoginScreen() {
               <InputLogin
                 placeholder="Digite seu email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={v => { setEmail(v); setEmailError(''); }}
                 keyboardType="email-address"
                 leftIcon={<Mail size={20} color="#888" />} // cinza
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholderTextColor="#888" // cinza
               />
+              {!!emailError && (
+                <Text style={styles.errorText}>{emailError}</Text>
+              )}
 
               <InputLogin
                 placeholder="Digite sua senha"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={v => { setPassword(v); setPasswordError(''); }}
                 secureTextEntry={!showPassword}
                 leftIcon={<Lock size={20} color="#888" />} // cinza
                 rightIcon={
@@ -96,6 +119,9 @@ export default function LoginScreen() {
                 }
                 placeholderTextColor="#888" // cinza
               />
+              {!!passwordError && (
+                <Text style={styles.errorText}>{passwordError}</Text>
+              )}
 
               <TouchableOpacity style={styles.forgotPassword}>
                 <Text style={styles.forgotPasswordText}>
@@ -136,7 +162,7 @@ export default function LoginScreen() {
               {/* Register Link */}
               <View style={styles.registerContainer}>
                 <Text style={styles.registerText}>Não tem uma conta? </Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.replace('/register')}>
                   <Text style={styles.registerLink}>Criar conta</Text>
                 </TouchableOpacity>
               </View>
@@ -271,8 +297,15 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   registerLink: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#24504c', // cor padronizada
+  },
+  errorText: {
+    color: '#e53935',
+    fontSize: 13,
+    marginBottom: 4,
+    marginLeft: 4,
+    fontFamily: 'Inter-Medium',
   },
 });
