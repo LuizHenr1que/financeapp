@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 // Middlewares de segurança
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8081',
+  origin: '*', // Temporariamente permitir todas as origens para debug
   credentials: true
 }));
 
@@ -41,6 +41,31 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api', limiter);
 
+// Middleware para capturar corpo bruto
+app.use((req, res, next) => {
+  let rawBody = '';
+  req.on('data', chunk => {
+    rawBody += chunk.toString();
+  });
+  req.on('end', () => {
+    req.rawBody = rawBody;
+    next();
+  });
+});
+
+// Middleware customizado para parsing de JSON (mesmo com content-type incorreto)
+app.use((req, res, next) => {
+  if (req.rawBody && req.rawBody.startsWith('{') && !req.body) {
+    try {
+      req.body = JSON.parse(req.rawBody);
+      console.log('🔧 JSON parseado manualmente:', req.body);
+    } catch (error) {
+      console.error('❌ Erro ao parsear JSON:', error);
+    }
+  }
+  next();
+});
+
 // Middlewares gerais
 app.use(morgan('combined'));
 
@@ -53,8 +78,8 @@ app.use((req, res, next) => {
       'content-type': req.headers['content-type'],
       'user-agent': req.headers['user-agent'],
     },
-    body: req.body,
-    rawBody: req.rawBody
+    rawBody: req.rawBody,
+    body: req.body
   });
   next();
 });
