@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const handleBackPress = () => {
     router.back();
@@ -44,9 +44,13 @@ export default function ProfileScreen() {
     // router.push('/plans');
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/login');
+    } catch (error) {
+      console.error('Erro no logout:', error);
+    }
   };
 
   return (
@@ -69,7 +73,7 @@ export default function ProfileScreen() {
             </View>
           </View>
           
-          <Text style={styles.userName}>Luiz Henrique</Text>
+          <Text style={styles.userName}>{user?.name || 'Usuário'}</Text>
           
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Conta ADM</Text>

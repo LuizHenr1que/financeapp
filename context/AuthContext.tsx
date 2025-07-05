@@ -1,12 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '@/types';
+import authService from '@/src/services/auth';
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -14,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     checkAuthState();
@@ -21,48 +26,155 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthState = async () => {
     try {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) {
-        setUser(JSON.parse(userData));
+      const isAuth = await authService.isAuthenticated();
+      if (isAuth) {
+        const storedUser = await authService.getStoredUser();
+        if (storedUser) {
+          setUser(storedUser);
+          setIsAuthenticated(true);
+          
+          // Validar token e atualizar dados do usuário
+          const response = await authService.getCurrentUser();
+          if (response.data) {
+            setUser(response.data);
+          } else if (response.error) {
+            // Token inválido, fazer logout
+            await authService.logout();
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        }
       }
     } catch (error) {
-      console.error('Error checking auth state:', error);
+      console.error('Erro ao verificar estado de autenticação:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // Simple validation for demo purposes
-    if (username === 'luiz' && password === '12345') {
-      const userData: User = {
-        id: '1',
-        username: 'luiz',
-      };
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authService.login({ email, password });
       
-      try {
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        return true;
-      } catch (error) {
-        console.error('Error saving user data:', error);
-        return false;
+      if (response.error) {
+        return { success: false, error: response.error };
       }
+      
+      if (response.data) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Resposta inválida do servidor' };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return { success: false, error: 'Erro de conexão' };
+    } finally {
+      setIsLoading(false);
     }
-    return false;
+  };
+
+  const register = async (
+    name: string, 
+    email: string, 
+    password: string, 
+    phone?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authService.register({ name, email, password, phone });
+      
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+      
+      if (response.data) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Resposta inválida do servidor' };
+    } catch (error) {
+      console.error('Erro no registro:', error);
+      return { success: false, error: 'Erro de conexão' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfile = async (
+    data: { name?: string; phone?: string; avatar?: string }
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authService.updateProfile(data);
+      
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+      
+      if (response.data) {
+        setUser(response.data.user);
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Resposta inválida do servidor' };
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      return { success: false, error: 'Erro de conexão' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const changePassword = async (
+    currentPassword: string, 
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authService.changePassword({ currentPassword, newPassword });
+      
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      return { success: false, error: 'Erro de conexão' };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
+      setIsLoading(true);
+      await authService.logout();
       setUser(null);
+      setIsAuthenticated(false);
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Erro no logout:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      register,
+      logout, 
+      updateProfile,
+      changePassword,
+      isLoading,
+      isAuthenticated
+    }}>
       {children}
     </AuthContext.Provider>
   );

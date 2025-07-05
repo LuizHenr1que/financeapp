@@ -16,14 +16,16 @@ import { Button } from '@/components/Button';
 import InputLogin from '@/components/InputLogin';
 import { theme } from '@/theme';
 import LogoIcon from '@/assets/images/logoicon.svg';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  const { login, isLoading } = useAuth();
 
   const validateEmail = (value: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,8 +34,10 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     let hasError = false;
+    
+    // Validar email
     if (!email) {
-      setEmailError('Digite o login');
+      setEmailError('Digite o email');
       hasError = true;
     } else if (!validateEmail(email)) {
       setEmailError('Digite um e-mail válido');
@@ -41,19 +45,30 @@ export default function LoginScreen() {
     } else {
       setEmailError('');
     }
+    
+    // Validar senha
     if (!password) {
       setPasswordError('Digite a senha');
       hasError = true;
     } else {
       setPasswordError('');
     }
+    
     if (hasError) return;
 
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      router.replace('/(tabs)');
-    }, 1500);
+    try {
+      const result = await login(email, password);
+      
+      if (result.success) {
+        // Navegar diretamente para o dashboard
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert('Erro', result.error || 'Erro ao fazer login');
+      }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      Alert.alert('Erro', 'Erro de conexão. Tente novamente.');
+    }
   };
 
   const handleGoogleLogin = () => {

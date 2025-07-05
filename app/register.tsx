@@ -11,30 +11,33 @@ import {
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react-native';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Phone } from 'lucide-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import InputLogin from '@/components/InputLogin';
 import { theme } from '@/theme';
 import LogoIcon from '@/assets/images/logoicon.svg';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [nameError, setNameError] = useState('');
   const [passwordErrors, setPasswordErrors] = useState({
     length: false,
     upper: false,
     lower: false,
     number: false,
-    special: false,
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  const { register, isLoading } = useAuth();
 
   const validateEmail = (value: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,46 +46,70 @@ export default function RegisterScreen() {
 
   const validatePassword = (value: string) => {
     return {
-      length: value.length >= 8,
+      length: value.length >= 6,
       upper: /[A-Z]/.test(value),
       lower: /[a-z]/.test(value),
       number: /[0-9]/.test(value),
-      special: /[^A-Za-z0-9]/.test(value),
     };
   };
 
   const handleRegister = async () => {
     let hasError = false;
+    
+    // Validar nome
+    if (!name || name.trim().length < 2) {
+      setNameError('Nome deve ter pelo menos 2 caracteres');
+      hasError = true;
+    } else {
+      setNameError('');
+    }
+    
+    // Validar email
     if (!email || !validateEmail(email)) {
       setEmailError('Digite um e-mail válido');
       hasError = true;
     } else {
       setEmailError('');
     }
+    
+    // Validar senha
     const passErrors = validatePassword(password);
     setPasswordErrors(passErrors);
     if (Object.values(passErrors).includes(false)) {
       hasError = true;
     }
-    if (!acceptTerms) {
-      Alert.alert('Atenção', 'Você precisa aceitar os termos e serviços.');
-      hasError = true;
-    }
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
-      return;
-    }
+    
+    // Validar confirmação de senha
     if (password !== confirmPassword) {
       Alert.alert('Erro', 'As senhas não coincidem');
       return;
     }
+    
+    // Validar termos
+    if (!acceptTerms) {
+      Alert.alert('Atenção', 'Você precisa aceitar os termos e serviços.');
+      return;
+    }
+    
     if (hasError) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      Alert.alert('Sucesso', 'Conta criada com sucesso!');
-      router.replace('/');
-    }, 1500);
+
+    try {
+      const result = await register(name.trim(), email, password, phone || undefined);
+      
+      if (result.success) {
+        Alert.alert('Sucesso', 'Conta criada com sucesso!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(tabs)')
+          }
+        ]);
+      } else {
+        Alert.alert('Erro', result.error || 'Erro ao criar conta');
+      }
+    } catch (error) {
+      console.error('Erro no registro:', error);
+      Alert.alert('Erro', 'Erro de conexão. Tente novamente.');
+    }
   };
 
   return (
@@ -112,12 +139,15 @@ export default function RegisterScreen() {
               <InputLogin
                 placeholder="Digite seu nome"
                 value={name}
-                onChangeText={setName}
+                onChangeText={v => { setName(v); setNameError(''); }}
                 leftIcon={<User size={20} color="#888" />} // cinza
                 autoCapitalize="words"
                 autoCorrect={false}
                 placeholderTextColor="#888"
               />
+              {!!nameError && (
+                <Text style={styles.errorText}>{nameError}</Text>
+              )}
               <InputLogin
                 placeholder="Digite seu email"
                 value={email}
@@ -131,6 +161,16 @@ export default function RegisterScreen() {
               {!!emailError && (
                 <Text style={styles.errorText}>{emailError}</Text>
               )}
+              <InputLogin
+                placeholder="Digite seu telefone (opcional)"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                leftIcon={<Phone size={20} color="#888" />} // cinza
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor="#888"
+              />
               <InputLogin
                 placeholder="Digite sua senha"
                 value={password}
@@ -149,11 +189,10 @@ export default function RegisterScreen() {
                 placeholderTextColor="#888"
               />
               <View style={{marginBottom: 8}}>
-                <Text style={[styles.requirement, passwordErrors.length ? styles.requirementMet : styles.requirementNotMet]}>• Mínimo de 8 caracteres</Text>
+                <Text style={[styles.requirement, passwordErrors.length ? styles.requirementMet : styles.requirementNotMet]}>• Mínimo de 6 caracteres</Text>
                 <Text style={[styles.requirement, passwordErrors.upper ? styles.requirementMet : styles.requirementNotMet]}>• Letra maiúscula</Text>
                 <Text style={[styles.requirement, passwordErrors.lower ? styles.requirementMet : styles.requirementNotMet]}>• Letra minúscula</Text>
                 <Text style={[styles.requirement, passwordErrors.number ? styles.requirementMet : styles.requirementNotMet]}>• Número</Text>
-                <Text style={[styles.requirement, passwordErrors.special ? styles.requirementMet : styles.requirementNotMet]}>• Caractere especial</Text>
               </View>
               <InputLogin
                 placeholder="Confirme sua senha"
