@@ -8,8 +8,15 @@
     "scheme": "infinance",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#22c55e"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/icons/ios/AppIcon~ios-marketing.png",
+      "bundleIdentifier": "com.infinance.app"
     },
     "web": {
       "bundler": "metro",
@@ -26,7 +33,12 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.infinance.app"
+      "package": "com.infinance.app",
+      "icon": "./assets/icons/android/play_store_512.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/android/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     }
   }
 }

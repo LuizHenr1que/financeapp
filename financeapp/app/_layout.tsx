@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { LoadingProvider } from '@/context/LoadingContext';
 import { MenuModalProvider } from '@/context/MenuModalContext';
 import { TransactionTypeModalProvider } from '@/context/TransactionTypeModalContext';
 import { Loading } from '@/components/Loading';
+import { CustomSplashScreen } from '@/components';
 import { useLoading } from '@/context/LoadingContext';
 import AppRoutes from './AppRoutes';
 
@@ -18,7 +19,16 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  const [showSplash, setShowSplash] = useState(true);
   useFrameworkReady();
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
+  if (showSplash) {
+    return <CustomSplashScreen onFinish={handleSplashFinish} />;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

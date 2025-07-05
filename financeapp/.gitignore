@@ -33,3 +33,9 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# README files
+README-*.md
+COMANDOS.md
+SPLASH-SCREEN.md
+ICON_SETUP.md
