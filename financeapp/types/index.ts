@@ -4,6 +4,10 @@ export interface User {
   email: string;
   phone?: string;
   avatar?: string;
+  isPremium: boolean;
+  premiumPlan?: string;
+  premiumStartDate?: string;
+  premiumEndDate?: string;
   createdAt: string;
   updatedAt: string;
 }

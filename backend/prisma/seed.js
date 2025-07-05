@@ -8,6 +8,8 @@ async function main() {
     console.log('🌱 Iniciando seed do banco de dados...');
 
     // Limpar dados existentes (cuidado em produção!)
+    await prisma.subscription.deleteMany();
+    await prisma.premiumPlan.deleteMany();
     await prisma.transaction.deleteMany();
     await prisma.goal.deleteMany();
     await prisma.card.deleteMany();
@@ -28,6 +30,62 @@ async function main() {
     });
 
     console.log('✅ Usuário criado:', user.email);
+
+    // Criar planos premium
+    const premiumPlans = await prisma.premiumPlan.createMany({
+      data: [
+        {
+          name: 'Premium Mensal',
+          code: 'monthly',
+          price: 9.90,
+          currency: 'BRL',
+          duration: 30,
+          features: {
+            unlimited_transactions: true,
+            advanced_reports: true,
+            export_data: true,
+            priority_support: true,
+            custom_categories: true
+          }
+        },
+        {
+          name: 'Premium Anual',
+          code: 'yearly',
+          price: 89.90,
+          currency: 'BRL',
+          duration: 365,
+          features: {
+            unlimited_transactions: true,
+            advanced_reports: true,
+            export_data: true,
+            priority_support: true,
+            custom_categories: true,
+            investment_tracking: true,
+            financial_goals: true
+          }
+        },
+        {
+          name: 'Premium Vitalício',
+          code: 'lifetime',
+          price: 199.90,
+          currency: 'BRL',
+          duration: null,
+          features: {
+            unlimited_transactions: true,
+            advanced_reports: true,
+            export_data: true,
+            priority_support: true,
+            custom_categories: true,
+            investment_tracking: true,
+            financial_goals: true,
+            ai_insights: true,
+            white_label: true
+          }
+        }
+      ]
+    });
+
+    console.log('✅ Planos premium criados:', premiumPlans.count);
 
     // Criar categorias padrão
     const categories = await prisma.category.createMany({
@@ -136,9 +194,47 @@ async function main() {
 
     console.log('✅ Metas criadas');
 
+    // Criar usuário premium de exemplo
+    const premiumUser = await prisma.user.create({
+      data: {
+        name: 'Usuário Premium',
+        email: 'premium@exemplo.com',
+        password: hashedPassword,
+        phone: '11888888888',
+        isPremium: true,
+        premiumPlan: 'yearly',
+        premiumStartDate: new Date(),
+        premiumEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 ano
+      }
+    });
+
+    // Criar assinatura premium ativa
+    await prisma.subscription.create({
+      data: {
+        userId: premiumUser.id,
+        plan: 'yearly',
+        status: 'active',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        amount: 89.90,
+        currency: 'BRL',
+        paymentMethod: 'credit_card'
+      }
+    });
+
+    console.log('✅ Usuário premium criado:', premiumUser.email);
+
     console.log('🎉 Seed concluído com sucesso!');
-    console.log('📧 Email: usuario@exemplo.com');
+    console.log('');
+    console.log('� Usuários criados:');
+    console.log('�📧 Email: usuario@exemplo.com');
     console.log('🔑 Senha: 123456');
+    console.log('📊 Status: Usuário gratuito');
+    console.log('');
+    console.log('👑 Email: premium@exemplo.com');
+    console.log('🔑 Senha: 123456');
+    console.log('📊 Status: Usuário premium (plano anual)');
+    console.log('');
 
   } catch (error) {
     console.error('❌ Erro durante o seed:', error);

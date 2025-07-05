@@ -1,5 +1,7 @@
 const express = require('express');
 const authRoutes = require('./auth');
+const subscriptionRoutes = require('./subscription');
+const premiumRoutes = require('./premium');
 
 const router = express.Router();
 
@@ -14,5 +16,11 @@ router.get('/health', (req, res) => {
 
 // Rotas de autenticação
 router.use('/auth', authRoutes);
+
+// Rotas de assinatura premium
+router.use('/subscription', subscriptionRoutes);
+
+// Rotas premium
+router.use('/premium', premiumRoutes);
 
 module.exports = router;

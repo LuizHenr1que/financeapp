@@ -7,14 +7,9 @@ class AuthController {
   // Registro de usuário
   async register(req, res) {
     try {
-      console.log('🔍 Register attempt - Request body:', req.body);
-      
       // Verificar erros de validação
       const errors = validationResult(req);
-      console.log('🔍 Validation errors:', errors.array());
-      
       if (!errors.isEmpty()) {
-        console.log('❌ Validation failed:', errors.array());
         return res.status(400).json({
           error: 'Dados inválidos',
           details: errors.array()
@@ -52,6 +47,10 @@ class AuthController {
           email: true,
           phone: true,
           avatar: true,
+          isPremium: true,
+          premiumPlan: true,
+          premiumStartDate: true,
+          premiumEndDate: true,
           createdAt: true
         }
       });
@@ -76,14 +75,9 @@ class AuthController {
   // Login de usuário
   async login(req, res) {
     try {
-      console.log('🔍 Login attempt - Request body:', req.body);
-      
       // Verificar erros de validação
       const errors = validationResult(req);
-      console.log('🔍 Validation errors:', errors.array());
-      
       if (!errors.isEmpty()) {
-        console.log('❌ Validation failed:', errors.array());
         return res.status(400).json({
           error: 'Dados inválidos',
           details: errors.array()
@@ -91,7 +85,6 @@ class AuthController {
       }
 
       const { email, password } = req.body;
-      console.log('🔐 Tentativa de login:', { email, passwordLength: password?.length });
 
       // Buscar usuário pelo email
       const user = await prisma.user.findUnique({
@@ -99,25 +92,19 @@ class AuthController {
       });
 
       if (!user) {
-        console.log('❌ Usuário não encontrado:', email);
         return res.status(401).json({
           error: 'Email ou senha incorretos'
         });
       }
-
-      console.log('✅ Usuário encontrado:', { id: user.id, email: user.email });
 
       // Verificar a senha
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
-        console.log('❌ Senha incorreta para:', email);
         return res.status(401).json({
           error: 'Email ou senha incorretos'
         });
       }
-
-      console.log('✅ Login bem-sucedido para:', email);
 
       // Gerar token JWT
       const token = generateToken(user.id);

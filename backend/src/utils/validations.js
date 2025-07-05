@@ -22,19 +22,16 @@ const registerValidation = [
   
   body('phone')
     .optional()
-    .isLength({ min: 10, max: 15 })
-    .withMessage('Telefone deve ter entre 10 e 15 dígitos')
-    .matches(/^[0-9+\-\s()]+$/)
-    .withMessage('Telefone deve conter apenas números, espaços e símbolos + - ( )')
+    .isMobilePhone('pt-BR')
+    .withMessage('Telefone deve ser válido')
 ];
 
 const loginValidation = [
   body('email')
     .trim()
-    .notEmpty()
-    .withMessage('Email é obrigatório')
     .isEmail()
-    .withMessage('Email deve ser válido'),
+    .withMessage('Email deve ser válido')
+    .normalizeEmail(),
   
   body('password')
     .notEmpty()
@@ -74,9 +71,23 @@ const changePasswordValidation = [
     .withMessage('Nova senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número')
 ];
 
+const activatePremiumValidation = [
+  body('planCode')
+    .notEmpty()
+    .withMessage('Código do plano é obrigatório')
+    .isIn(['monthly', 'yearly', 'lifetime'])
+    .withMessage('Código do plano deve ser: monthly, yearly ou lifetime'),
+  
+  body('paymentMethod')
+    .optional()
+    .isIn(['credit_card', 'pix', 'boleto', 'paypal'])
+    .withMessage('Método de pagamento inválido')
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
   updateProfileValidation,
-  changePasswordValidation
+  changePasswordValidation,
+  activatePremiumValidation
 };
