@@ -135,7 +135,7 @@ export default function TransactionsScreen() {
                       styles.transactionAmount,
                       { color: transaction.type === 'income' ? theme.colors.income : theme.colors.expense }
                     ]}>
-                      {transaction.type === 'income' ? '+' : '-'}R$ {transaction.amount.toFixed(2)}
+                      {transaction.type === 'income' ? '+' : '-'}R$ {(Number(transaction.amount) || 0).toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.transactionActions}>

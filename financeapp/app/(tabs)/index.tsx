@@ -20,10 +20,10 @@ export default function DashboardScreen() {
   const { openModal } = useMenuModal();
   const router = useRouter();
 
-  const totalBalance = getTotalBalance();
-  const monthlyIncome = getMonthlyIncome();
-  const monthlyExpenses = getMonthlyExpenses();
-  const categoryExpenses = getCategoryExpenses();
+  const totalBalance = Number(getTotalBalance()) || 0;
+  const monthlyIncome = Number(getMonthlyIncome()) || 0;
+  const monthlyExpenses = Number(getMonthlyExpenses()) || 0;
+  const categoryExpenses = getCategoryExpenses() || [];
 
   const chartData = categoryExpenses.length > 0 ? categoryExpenses.map(item => ({
     name: item.name,
@@ -302,7 +302,9 @@ export default function DashboardScreen() {
               <Text style={styles.sectionTitleBold}>Cartões</Text>
             </Text>
             {data.cards.map(card => {
-              const utilization = (card.currentSpending / card.limit) * 100;
+              const cardLimit = Number(card.limit) || 0;
+              const cardSpending = Number(card.currentSpending) || 0;
+              const utilization = cardLimit > 0 ? (cardSpending / cardLimit) * 100 : 0;
               return (
                 <View key={card.id} style={styles.cardItem}>
                   <View style={styles.cardHeader}>
@@ -323,7 +325,7 @@ export default function DashboardScreen() {
                     </View>
                   </View>
                   <Text style={styles.cardAmount}>
-                    R$ {card.currentSpending.toFixed(2)} / R$ {card.limit.toFixed(2)}
+                    R$ {cardSpending.toFixed(2)} / R$ {cardLimit.toFixed(2)}
                   </Text>
                 </View>
               );
@@ -363,7 +365,7 @@ export default function DashboardScreen() {
               <Text style={styles.alertTitle}>Metas Próximas!</Text>
             </View>
             {nearGoals.map(goal => {
-              const progress = (goal.currentAmount / goal.targetAmount) * 100;
+              const progress = (Number(goal.currentAmount) || 0) / (Number(goal.targetAmount) || 1) * 100;
               return (
                 <Text key={goal.id} style={styles.alertText}>
                   {goal.name} está {progress.toFixed(0)}% concluída!

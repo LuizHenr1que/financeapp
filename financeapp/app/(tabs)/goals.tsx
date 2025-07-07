@@ -249,8 +249,10 @@ export default function GoalsScreen() {
           </Card>
         ) : (
           data.goals.map(goal => {
-            const progress = (goal.currentAmount / goal.targetAmount) * 100;
-            const remaining = goal.targetAmount - goal.currentAmount;
+            const currentAmount = Number(goal.currentAmount) || 0;
+            const targetAmount = Number(goal.targetAmount) || 1;
+            const progress = (currentAmount / targetAmount) * 100;
+            const remaining = targetAmount - currentAmount;
             const daysRemaining = getDaysRemaining(goal.deadline);
             const isCompleted = progress >= 100;
             const isOverdue = daysRemaining < 0;
@@ -295,10 +297,10 @@ export default function GoalsScreen() {
                 <View style={styles.goalProgress}>
                   <View style={styles.amountRow}>
                     <Text style={styles.currentAmount}>
-                      R$ {goal.currentAmount.toFixed(2)}
+                      R$ {(Number(goal.currentAmount) || 0).toFixed(2)}
                     </Text>
                     <Text style={styles.targetAmount}>
-                      / R$ {goal.targetAmount.toFixed(2)}
+                      / R$ {(Number(goal.targetAmount) || 0).toFixed(2)}
                     </Text>
                   </View>
                   

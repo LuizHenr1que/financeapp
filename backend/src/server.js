@@ -18,14 +18,18 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requests por IP por window
-  message: {
-    error: 'Muitas tentativas. Tente novamente em 15 minutos.'
-  }
-});
+// Rate limiting (desabilitado temporariamente para desenvolvimento)
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutos
+//   max: 1000, // máximo 1000 requests por IP por window (aumentado para desenvolvimento)
+//   message: {
+//     error: 'Muitas tentativas. Tente novamente em 15 minutos.'
+//   },
+//   // Pular rate limiting para localhost durante desenvolvimento
+//   skip: (req) => {
+//     return req.ip === '::1' || req.ip === '127.0.0.1' || req.ip === '::ffff:127.0.0.1';
+//   }
+// });
 
 // Rate limiting mais restritivo para login
 const authLimiter = rateLimit({
@@ -39,7 +43,7 @@ const authLimiter = rateLimit({
 });
 
 app.use('/api/auth/login', authLimiter);
-app.use('/api', limiter);
+// app.use('/api', limiter); // Desabilitado temporariamente
 
 // Middleware para capturar corpo bruto
 app.use((req, res, next) => {

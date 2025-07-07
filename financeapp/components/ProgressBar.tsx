@@ -36,7 +36,7 @@ export function ProgressBar({
       </View>
       {showLabel && (
         <Text style={styles.label}>
-          {percentage}% - R$ {current.toFixed(2)} / R$ {target.toFixed(2)}
+          {percentage}% - R$ {(Number(current) || 0).toFixed(2)} / R$ {(Number(target) || 0).toFixed(2)}
         </Text>
       )}
     </View>

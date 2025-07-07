@@ -146,6 +146,15 @@ export default function CategoriesScreen() {
   const incomeCategories = data.categories.filter(cat => cat.type === 'income');
   const expenseCategories = data.categories.filter(cat => cat.type === 'expense');
 
+  // Logs para verificar os dados
+  console.log('📂 Categorias carregadas no contexto:', data.categories.length);
+  console.log('📂 Categorias de receita:', incomeCategories.length);
+  console.log('📂 Categorias de despesa:', expenseCategories.length);
+  
+  if (data.categories.length > 0) {
+    console.log('📋 Primeiras categorias:', data.categories.slice(0, 3).map(c => ({ id: c.id, name: c.name, type: c.type })));
+  }
+
   if (isEditing) {
     return (
       <View style={styles.container}>
@@ -253,13 +262,49 @@ export default function CategoriesScreen() {
           </TouchableOpacity>
         </Card>
 
-        {/*list Categories */}
+        {/*Categorias de Despesa */}
         <Card style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Categorias padões</Text>
+          <Text style={styles.sectionTitle}>Categorias de Despesa</Text>
           {expenseCategories.length === 0 ? (
             <Text style={styles.emptyText}>Nenhuma categoria de despesa</Text>
           ) : (
             expenseCategories.map(category => {
+              const Icon = iconComponents[category.icon as keyof typeof iconComponents] || Circle;
+              return (
+                <View key={category.id} style={styles.categoryItem}>
+                  <View style={styles.categoryInfo}>
+                    <View style={[styles.categoryIcon, { backgroundColor: category.color, alignItems: 'center', justifyContent: 'center' }]}> 
+                      <Icon size={16} color="#fff" />
+                    </View>
+                    <Text style={styles.categoryName}>{category.name}</Text>
+                  </View>
+                  <View style={styles.categoryActions}>
+                    <TouchableOpacity
+                      onPress={() => handleEdit(category)}
+                      style={styles.actionButton}
+                    >
+                      <Edit3 size={16} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(category.id)}
+                      style={styles.actionButton}
+                    >
+                      <Trash2 size={16} color={theme.colors.error} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </Card>
+
+        {/*Categorias de Receita */}
+        <Card style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Categorias de Receita</Text>
+          {incomeCategories.length === 0 ? (
+            <Text style={styles.emptyText}>Nenhuma categoria de receita</Text>
+          ) : (
+            incomeCategories.map(category => {
               const Icon = iconComponents[category.icon as keyof typeof iconComponents] || Circle;
               return (
                 <View key={category.id} style={styles.categoryItem}>

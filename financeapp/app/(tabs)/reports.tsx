@@ -220,7 +220,7 @@ export default function ReportsScreen() {
                       }
                     ]}
                   >
-                    {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(transaction.amount).toFixed(2).replace('.', ',')}
+                    {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount) || 0).toFixed(2).replace('.', ',')}
                   </Text>
                   {transaction.type === 'income' ? (
                     <ArrowDownLeft size={16} color={theme.colors.income} />

@@ -3,10 +3,16 @@ const prisma = require('../config/database');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    console.log('\n🔐 === VERIFICAÇÃO DE AUTENTICAÇÃO ===');
+    console.log('📥 Headers da requisição:', req.headers);
+    
     // Pegar o token do header Authorization
     const authHeader = req.headers.authorization;
     
+    console.log('🔑 Header Authorization:', authHeader || 'AUSENTE');
+    
     if (!authHeader) {
+      console.log('❌ Token de acesso não fornecido');
       return res.status(401).json({ 
         error: 'Token de acesso requerido' 
       });
@@ -15,7 +21,10 @@ const authMiddleware = async (req, res, next) => {
     // Verificar se o token começa com "Bearer "
     const token = authHeader.split(' ')[1];
     
+    console.log('🎫 Token extraído:', token ? `${token.substring(0, 20)}...` : 'NULO');
+    
     if (!token) {
+      console.log('❌ Token de acesso inválido');
       return res.status(401).json({ 
         error: 'Token de acesso inválido' 
       });
@@ -23,6 +32,8 @@ const authMiddleware = async (req, res, next) => {
 
     // Verificar e decodificar o token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    console.log('🔓 Token decodificado:', { userId: decoded.userId });
     
     // Buscar o usuário no banco
     const user = await prisma.user.findUnique({
@@ -39,10 +50,14 @@ const authMiddleware = async (req, res, next) => {
     });
 
     if (!user) {
+      console.log('❌ Usuário não encontrado no banco de dados para ID:', decoded.userId);
       return res.status(401).json({ 
         error: 'Usuário não encontrado' 
       });
     }
+
+    console.log('✅ Usuário autenticado:', { id: user.id, email: user.email, name: user.name });
+    console.log('🔐 === FIM DA VERIFICAÇÃO ===\n');
 
     // Adicionar usuário ao request
     req.user = user;

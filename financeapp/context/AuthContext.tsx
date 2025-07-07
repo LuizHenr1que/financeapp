@@ -26,24 +26,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthState = async () => {
     try {
+      console.log('🔍 Verificando estado de autenticação...');
       const isAuth = await authService.isAuthenticated();
+      console.log('🔑 Está autenticado?', isAuth);
+      
       if (isAuth) {
         const storedUser = await authService.getStoredUser();
+        console.log('👤 Usuário armazenado:', storedUser?.email || 'Nenhum');
+        
         if (storedUser) {
           setUser(storedUser);
           setIsAuthenticated(true);
           
           // Validar token e atualizar dados do usuário
+          console.log('📡 Validando token com o servidor...');
           const response = await authService.getCurrentUser();
           if (response.data) {
-            setUser(response.data);
+            console.log('✅ Token válido, usuário atualizado');
+            // Mapear os dados do backend para o tipo local User
+            const mappedUser: User = {
+              ...response.data.user,
+              isPremium: false, // Valor padrão, pode ser atualizado pelo backend
+              premiumPlan: undefined,
+              premiumStartDate: undefined,
+              premiumEndDate: undefined
+            };
+            setUser(mappedUser);
           } else if (response.error) {
+            console.log('❌ Token inválido, fazendo logout:', response.error);
             // Token inválido, fazer logout
             await authService.logout();
             setUser(null);
             setIsAuthenticated(false);
           }
         }
+      } else {
+        console.log('❌ Usuário não autenticado');
       }
     } catch (error) {
       console.error('Erro ao verificar estado de autenticação:', error);
@@ -55,14 +73,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
+      console.log('🚀 Tentando fazer login...', { email });
+      
       const response = await authService.login({ email, password });
       
       if (response.error) {
+        console.error('❌ Erro no login:', response.error);
         return { success: false, error: response.error };
       }
       
       if (response.data) {
-        setUser(response.data.user);
+        console.log('✅ Login bem-sucedido!', { user: response.data.user.email });
+        // Mapear os dados do backend para o tipo local User
+        const mappedUser: User = {
+          ...response.data.user,
+          isPremium: false, // Valor padrão, pode ser atualizado pelo backend
+          premiumPlan: undefined,
+          premiumStartDate: undefined,
+          premiumEndDate: undefined
+        };
+        setUser(mappedUser);
         setIsAuthenticated(true);
         return { success: true };
       }
@@ -84,14 +114,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
+      console.log('📝 Tentando registrar usuário...', { name, email });
+      
       const response = await authService.register({ name, email, password, phone });
       
       if (response.error) {
+        console.error('❌ Erro no registro:', response.error);
         return { success: false, error: response.error };
       }
       
       if (response.data) {
-        setUser(response.data.user);
+        console.log('✅ Registro bem-sucedido!', { user: response.data.user.email });
+        // Mapear os dados do backend para o tipo local User
+        const mappedUser: User = {
+          ...response.data.user,
+          isPremium: false, // Valor padrão, pode ser atualizado pelo backend
+          premiumPlan: undefined,
+          premiumStartDate: undefined,
+          premiumEndDate: undefined
+        };
+        setUser(mappedUser);
         setIsAuthenticated(true);
         return { success: true };
       }
@@ -110,14 +152,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
+      console.log('📝 Atualizando perfil...', data);
+      
       const response = await authService.updateProfile(data);
       
       if (response.error) {
+        console.error('❌ Erro ao atualizar perfil:', response.error);
         return { success: false, error: response.error };
       }
       
       if (response.data) {
-        setUser(response.data.user);
+        console.log('✅ Perfil atualizado com sucesso!');
+        // Mapear os dados do backend para o tipo local User
+        const mappedUser: User = {
+          ...response.data.user,
+          isPremium: false, // Valor padrão, pode ser atualizado pelo backend
+          premiumPlan: undefined,
+          premiumStartDate: undefined,
+          premiumEndDate: undefined
+        };
+        setUser(mappedUser);
         return { success: true };
       }
       
@@ -136,12 +190,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
+      console.log('🔒 Alterando senha...');
+      
       const response = await authService.changePassword({ currentPassword, newPassword });
       
       if (response.error) {
+        console.error('❌ Erro ao alterar senha:', response.error);
         return { success: false, error: response.error };
       }
       
+      console.log('✅ Senha alterada com sucesso!');
       return { success: true };
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
@@ -154,9 +212,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       setIsLoading(true);
+      console.log('🚪 Fazendo logout...');
+      
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
+      
+      console.log('✅ Logout realizado com sucesso!');
     } catch (error) {
       console.error('Erro no logout:', error);
     } finally {

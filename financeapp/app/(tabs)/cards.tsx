@@ -264,8 +264,10 @@ export default function CardsScreen() {
           </Card>
         ) : (
           data.cards.map((card) => {
-            const utilization = (card.currentSpending / card.limit) * 100;
-            const available = card.limit - card.currentSpending;
+            const cardLimit = Number(card.limit) || 0;
+            const cardSpending = Number(card.currentSpending) || 0;
+            const utilization = cardLimit > 0 ? (cardSpending / cardLimit) * 100 : 0;
+            const available = cardLimit - cardSpending;
 
             return (
               <Card key={card.id} style={styles.cardItem}>
@@ -298,10 +300,10 @@ export default function CardsScreen() {
                 <View style={styles.cardDetails}>
                   <View style={styles.amountRow}>
                     <Text style={styles.spentAmount}>
-                      R$ {card.currentSpending.toFixed(2)}
+                      R$ {cardSpending.toFixed(2)}
                     </Text>
                     <Text style={styles.limitAmount}>
-                      / R$ {card.limit.toFixed(2)}
+                      / R$ {cardLimit.toFixed(2)}
                     </Text>
                   </View>
                   <Text style={styles.availableAmount}>

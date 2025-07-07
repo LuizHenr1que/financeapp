@@ -47,15 +47,24 @@ class AuthService {
   // Login
   async login(credentials: LoginRequest) {
     try {
+      console.log('🚀 Tentando fazer login...', { email: credentials.email });
       const response = await apiService.post<AuthResponse>('/auth/login', credentials);
       
       if (response.error) {
+        console.error('❌ Erro no login:', response.error);
         return { error: response.error, details: response.details };
       }
 
       if (response.data) {
+        console.log('✅ Login bem-sucedido!', { 
+          user: response.data.user.email, 
+          token: response.data.token.substring(0, 20) + '...' 
+        });
+        
         // Salvar token e dados do usuário
         await this.saveAuthData(response.data.token, response.data.user);
+        console.log('💾 Token e dados do usuário salvos no AsyncStorage');
+        
         return { data: response.data };
       }
 

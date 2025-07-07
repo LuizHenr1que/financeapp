@@ -74,6 +74,37 @@ export default function AddTransactionScreen() {
 
   const filteredCategories = data.categories.filter(cat => cat.type === formData.type);
   const availableCards = data.cards;
+  const availableAccounts = data.accounts || [];
+  
+  // Combinar cartões e contas em uma única lista para seleção
+  const availableOptions = [
+    ...availableCards.map(card => ({ ...card, type: 'card' as const })),
+    ...availableAccounts.map(account => ({ ...account, type: 'account' as const }))
+  ];
+
+  // Logs para verificar as categorias na tela de adicionar transação
+  console.log('💰 AddTransaction - Total categorias:', data.categories.length);
+  console.log('💰 AddTransaction - Tipo selecionado:', formData.type);
+  console.log('💰 AddTransaction - Categorias filtradas:', filteredCategories.length);
+  console.log('💰 AddTransaction - Total cartões:', data.cards.length);
+  console.log('💰 AddTransaction - Total contas:', data.accounts?.length || 0);
+  console.log('💰 AddTransaction - Total opções de pagamento:', availableOptions.length);
+  
+  if (filteredCategories.length > 0) {
+    console.log('💰 AddTransaction - Categorias disponíveis:', filteredCategories.map(c => ({ id: c.id, name: c.name })));
+  }
+  
+  if (data.cards.length > 0) {
+    console.log('💰 AddTransaction - Cartões disponíveis:', data.cards.map(c => ({ id: c.id, name: c.name })));
+  }
+  
+  if (data.accounts && data.accounts.length > 0) {
+    console.log('💰 AddTransaction - Contas disponíveis:', data.accounts.map(a => ({ id: a.id, name: a.name })));
+  }
+  
+  if (availableOptions.length > 0) {
+    console.log('💰 AddTransaction - Opções de pagamento:', availableOptions.map(o => ({ id: o.id, name: o.name, type: o.type })));
+  }
 
   const recurrenceOptions = ['Anual', 'Mensal', 'Semanal',];
   const installmentsOptions = Array.from({ length: 120 }, (_, i) => i + 1);
@@ -85,27 +116,70 @@ export default function AddTransactionScreen() {
   }, [params?.type]);
 
   const handleSave = async () => {
-    if (!formData.amount || !formData.categoryId || !formData.description.trim()) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios');
+    // Validação específica de cada campo
+    if (!formData.amount || formData.amount.trim() === '') {
+      Alert.alert('Erro', 'Por favor, preencha o valor da transação');
       return;
     }
+    
+    if (!formData.categoryId) {
+      Alert.alert('Erro', 'Por favor, selecione uma categoria');
+      return;
+    }
+    
+    if (!formData.description || formData.description.trim() === '') {
+      Alert.alert('Erro', 'Por favor, preencha a descrição da transação');
+      return;
+    }
+    
+    if (!formData.cardId) {
+      Alert.alert('Erro', 'Por favor, selecione um cartão ou conta');
+      return;
+    }
+    
+    // Verificar se a opção selecionada existe nas opções disponíveis
+    const selectedOption = availableOptions.find(option => option.id === formData.cardId);
+    if (!selectedOption) {
+      Alert.alert('Erro', 'Cartão ou conta selecionada não é válida');
+      return;
+    }
+
     const amount = parseFloat(formData.amount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
       Alert.alert('Erro', 'Valor deve ser um número válido maior que zero');
       return;
     }
+    
     setLoading(true);
     try {
+      // Encontrar se a opção selecionada é cartão ou conta
+      const selectedOption = availableOptions.find(option => option.id === formData.cardId);
+      
       const transactionData = {
         type: formData.type,
         amount,
+        title: formData.title,
+        description: formData.description,
         date: formData.date,
         categoryId: formData.categoryId,
+        // Se é cartão, usar cardId e accountId. Se é conta, usar apenas accountId
+        accountId: formData.cardId, // Sempre enviar accountId
+        cardId: selectedOption?.type === 'card' ? formData.cardId : undefined, // Só enviar cardId se for cartão
         paymentMethod: formData.paymentMethod,
-        cardId: formData.paymentMethod === 'card' ? formData.cardId : undefined,
+        launchType: formData.launchType,
         installments: formData.installments ? parseInt(formData.installments) : undefined,
-        description: formData.description,
+        valorComoParcela: formData.valorComoParcela,
+        recurrenceType: formData.launchType === 'recorrente' ? recurrenceType as 'Anual' | 'Mensal' | 'Semanal' : undefined,
       };
+
+      console.log('💰 === DADOS DA TRANSAÇÃO A SER ENVIADA ===');
+      console.log('📊 TransactionData:', JSON.stringify(transactionData, null, 2));
+      console.log('🎯 Opção selecionada:', selectedOption ? `${selectedOption.name} (${selectedOption.type})` : 'Nenhuma');
+      console.log('🎯 ID selecionado:', formData.cardId);
+      console.log('🎯 AccountId que será enviado:', formData.cardId);
+      console.log('🎯 CardId que será enviado:', selectedOption?.type === 'card' ? formData.cardId : 'undefined');
+      console.log('💰 === FIM DOS DADOS ===');
+
       await addTransaction(transactionData);
       router.back();
     } catch (error) {
@@ -337,17 +411,19 @@ export default function AddTransactionScreen() {
             showsHorizontalScrollIndicator={false}
             style={styles.categoryScroll}
           >
-            {availableCards.map((card) => (
+            {availableOptions.map((option) => (
               <TouchableOpacity
-                key={card.id}
+                key={option.id}
                 style={[
                   styles.cardOption,
-                  { backgroundColor: card.color },
-                  formData.cardId === card.id && styles.cardOptionSelected,
+                  { backgroundColor: option.color },
+                  formData.cardId === option.id && styles.cardOptionSelected,
                 ]}
-                onPress={() => setFormData({ ...formData, cardId: card.id })}
+                onPress={() => setFormData({ ...formData, cardId: option.id })}
               >
-                <Text style={styles.cardOptionText}>{card.name}</Text>
+                <Text style={styles.cardOptionText}>
+                  {option.name} {option.type === 'account' ? '(Conta)' : '(Cartão)'}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

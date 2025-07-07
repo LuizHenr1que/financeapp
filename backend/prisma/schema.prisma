@@ -81,12 +81,29 @@ model Transaction {
   accountId   String
   categoryId  String
   userId      String
+  
+  // Novos campos para parcelamento e lançamentos
+  title              String?   // Título da transação
+  paymentMethod      String?   // "cash", "pix", "card"
+  cardId             String?   // ID do cartão se paymentMethod for "card"
+  launchType         String    @default("unico") // "unico", "recorrente", "parcelado"
+  installments       Int?      // Número de parcelas/recorrências
+  currentInstallment Int?      // Parcela atual (para parceladas)
+  valorComoParcela   Boolean   @default(false) // Se o valor é por parcela ou total
+  recurrenceType     String?   // "Anual", "Mensal", "Semanal"
+  parentTransactionId String?  // ID da transação pai (para parcelas/recorrências)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   account  Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  card     Card?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  
+  // Auto-relacionamento para transações pai/filha
+  parentTransaction Transaction? @relation("TransactionHierarchy", fields: [parentTransactionId], references: [id], onDelete: Cascade)
+  childTransactions Transaction[] @relation("TransactionHierarchy")
 
   @@map("transactions")
 }
@@ -121,7 +138,8 @@ model Card {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
 
   @@map("cards")
 }
