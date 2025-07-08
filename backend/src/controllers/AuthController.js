@@ -55,6 +55,28 @@ class AuthController {
         }
       });
 
+      // Inserir categorias padrão para o novo usuário
+      await prisma.category.createMany({
+        data: [
+          { name: 'Alimentação', color: '#ff6b6b', icon: 'Utensils', type: 'expense', userId: user.id },
+          { name: 'Transporte', color: '#4ecdc4', icon: 'Car', type: 'expense', userId: user.id },
+          { name: 'Salário', color: '#45b7d1', icon: 'Briefcase', type: 'income', userId: user.id },
+          { name: 'Lazer', color: '#96ceb4', icon: 'Gift', type: 'expense', userId: user.id }
+        ]
+      });
+
+      // Inserir conta padrão para o novo usuário
+      await prisma.account.create({
+        data: {
+          name: 'Carteira',
+          type: 'wallet',
+          balance: 0,
+          color: '#1de9b6',
+          icon: 'Wallet',
+          userId: user.id
+        }
+      });
+
       // Gerar token JWT
       const token = generateToken(user.id);
 

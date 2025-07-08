@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { theme } from '@/theme';
 import { Card } from '@/components/Card';
@@ -9,19 +9,32 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Modalize } from 'react-native-modalize';
 import { AddCardMethodOptions } from '@/components/AddCardMethodOptions';
 import { AddAccountManualModal, AddAccountManualModalRef } from '@/components/AddAccountManualModal';
-
-const mockAccounts = [
-  {
-    id: '1',
-    name: 'Carteira',
-    balance: 2500.75,
-  },
-];
+import api from '@/src/services/api';
+import authService from '@/src/services/auth';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AccountsScreen() {
   const modalizeRef = useRef<Modalize>(null);
   const manualModalRef = useRef<AddAccountManualModalRef>(null);
   const [step, setStep] = useState<'manual' | null>(null);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  const fetchAccounts = async () => {
+    const token = await authService.getToken();
+    if (!token) return;
+    setLoading(true);
+    const res = await api.get<{ accounts: any[] }>('/accounts', token);
+    if (res.data && res.data.accounts) {
+      setAccounts(res.data.accounts);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [user]);
 
   const handleAddAccount = () => {
     setStep(null);
@@ -48,7 +61,9 @@ export default function AccountsScreen() {
             <Text style={styles.addAccountText}>Adicionar Conta</Text>
           </TouchableOpacity>
         </Card>
-        {mockAccounts.length === 0 ? (
+        {loading ? (
+          <Text style={{ textAlign: 'center', marginTop: 32 }}>Carregando contas...</Text>
+        ) : accounts.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Banknote size={48} color={theme.colors.textSecondary} />
             <Text style={styles.emptyTitle}>Nenhuma conta cadastrada</Text>
@@ -57,7 +72,7 @@ export default function AccountsScreen() {
             </Text>
           </Card>
         ) : (
-          mockAccounts.map(account => (
+          accounts.map(account => (
             <Card key={account.id} style={styles.accountCardCustom}>
               <TouchableOpacity
                 disabled={!selectMode}
@@ -76,7 +91,7 @@ export default function AccountsScreen() {
                   <Text style={styles.accountNameCustom}>{account.name}</Text>
                   <View style={styles.saldoContainer}>
                     <Text style={styles.saldoLabel}>Saldo de</Text>
-                    <Text style={styles.saldoValue}>R$ {account.balance.toFixed(2)}</Text>
+                    <Text style={styles.saldoValue}>R$ {Number(account.balance || 0).toFixed(2)}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -107,7 +122,7 @@ export default function AccountsScreen() {
           }}
         />
       </Modalize>
-      <AddAccountManualModal ref={manualModalRef} />
+      <AddAccountManualModal ref={manualModalRef} onAccountCreated={fetchAccounts} />
     </View>
   );
 }

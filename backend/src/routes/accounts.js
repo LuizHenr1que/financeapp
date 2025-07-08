@@ -9,5 +9,6 @@ router.use(auth);
 
 // Rotas
 router.get('/', AccountController.index);
+router.post('/', AccountController.create);
 
 module.exports = router;

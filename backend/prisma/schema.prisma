@@ -52,6 +52,7 @@ model Account {
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
+  categories   Category[] // <- relação inversa para categorias por conta
 
   @@map("accounts")
 }
@@ -63,10 +64,12 @@ model Category {
   color     String?
   icon      String?
   userId    String
+  accountId String? // <- Adicionado para vincular categoria à conta
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account?      @relation(fields: [accountId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@map("categories")

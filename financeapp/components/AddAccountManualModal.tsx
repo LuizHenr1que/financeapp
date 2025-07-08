@@ -5,13 +5,15 @@ import { theme } from '@/theme';
 import { ChevronRight } from 'lucide-react-native';
 import { AccountIconSelectorModal, AccountIconSelectorModalRef, AccountIconOption } from './AccountIconSelectorModal';
 import { ICONS } from './AccountIconSelectorModal';
+import api from '@/src/services/api';
+import authService from '@/src/services/auth';
 
 export type AddAccountManualModalRef = {
   open: () => void;
   close: () => void;
 };
 
-export const AddAccountManualModal = forwardRef<AddAccountManualModalRef>((props, ref) => {
+export const AddAccountManualModal = forwardRef<AddAccountManualModalRef, { onAccountCreated?: () => void }>((props, ref) => {
   const modalRef = React.useRef<Modalize>(null);
   const iconSelectorRef = useRef<AccountIconSelectorModalRef>(null);
   const [name, setName] = useState('');
@@ -23,13 +25,39 @@ export const AddAccountManualModal = forwardRef<AddAccountManualModalRef>((props
     close: () => modalRef.current?.close(),
   }));
 
-  const handleSave = () => {
-    // Aqui você pode adicionar lógica para salvar a conta
-    console.log('Conta criada:', { name, balance, icon });
-    modalRef.current?.close();
-    setName('');
-    setBalance('');
-    setIcon('wallet');
+  const handleSave = async () => {
+    if (!name.trim()) {
+      alert('Informe o nome da conta.');
+      return;
+    }
+    if (!balance.trim() || isNaN(Number(balance))) {
+      alert('Informe um saldo inicial válido.');
+      return;
+    }
+    const token = await authService.getToken();
+    if (!token) {
+      alert('Usuário não autenticado. Faça login novamente.');
+      return;
+    }
+    try {
+      const res = await api.post('/accounts', {
+        name,
+        type: 'checking',
+        balance: Number(balance),
+        icon,
+      }, token);
+      if (!res.error) {
+        props.onAccountCreated?.();
+        modalRef.current?.close();
+        setName('');
+        setBalance('');
+        setIcon('wallet');
+      } else {
+        alert('Erro ao cadastrar conta: ' + res.error);
+      }
+    } catch (e) {
+      alert('Erro ao cadastrar conta.');
+    }
   };
 
   return (

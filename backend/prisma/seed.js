@@ -133,7 +133,33 @@ async function main() {
       }
     });
 
-    console.log('✅ Contas criadas');
+    // Categorias principais para contas
+    const mainCategories = [
+      { name: 'Alimentação', type: 'expense', color: '#F44336', icon: '🍽️' },
+      { name: 'Transporte', type: 'expense', color: '#FF5722', icon: '🚗' },
+      { name: 'Moradia', type: 'expense', color: '#795548', icon: '🏠' },
+      { name: 'Saúde', type: 'expense', color: '#E91E63', icon: '🏥' },
+      { name: 'Educação', type: 'expense', color: '#3F51B5', icon: '📚' },
+      { name: 'Lazer', type: 'expense', color: '#9E9E9E', icon: '🎉' },
+      { name: 'Compras', type: 'expense', color: '#607D8B', icon: '🛒' },
+      { name: 'Serviços', type: 'expense', color: '#00BCD4', icon: '🔧' },
+      { name: 'Salário', type: 'income', color: '#4CAF50', icon: '💰' },
+      { name: 'Freelance', type: 'income', color: '#2196F3', icon: '💻' },
+      { name: 'Investimentos', type: 'income', color: '#FF9800', icon: '📈' },
+      { name: 'Vendas', type: 'income', color: '#9C27B0', icon: '🛍️' },
+    ];
+
+    // Cria categorias para cada conta
+    for (const account of [checkingAccount, savingsAccount]) {
+      await prisma.category.createMany({
+        data: mainCategories.map(cat => ({
+          ...cat,
+          userId: user.id,
+          accountId: account.id
+        }))
+      });
+    }
+    console.log('✅ Categorias principais criadas para cada conta');
 
     // Criar cartões de exemplo
     await prisma.card.createMany({
