@@ -10,6 +10,7 @@ export interface User {
   premiumEndDate?: string;
   createdAt: string;
   updatedAt: string;
+  role?: string; // Adicionado para badge dinâmico
 }
 
 export interface Category {

@@ -45,7 +45,11 @@ const authMiddleware = async (req, res, next) => {
         avatar: true,
         phone: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        isPremium: true,
+        premiumPlan: true,
+        premiumStartDate: true,
+        premiumEndDate: true
       }
     });
 

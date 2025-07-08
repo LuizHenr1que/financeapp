@@ -15,10 +15,15 @@ import { Header } from '@/components/Header';
 const screenWidth = Dimensions.get('window').width;
 
 export default function DashboardScreen() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { data, getTotalBalance, getMonthlyIncome, getMonthlyExpenses, getCategoryExpenses } = useData();
   const { openModal } = useMenuModal();
   const router = useRouter();
+
+  // Debug: vamos ver se o usuário está sendo carregado
+  console.log('👤 Dashboard - Usuário atual:', user);
+  console.log('📧 Dashboard - Email do usuário:', user?.email);
+  console.log('📛 Dashboard - Nome do usuário:', user?.name);
 
   const totalBalance = Number(getTotalBalance()) || 0;
   const monthlyIncome = Number(getMonthlyIncome()) || 0;
@@ -140,7 +145,7 @@ export default function DashboardScreen() {
       <View style={styles.container}>
         <Header 
           type="dashboard"
-          userName="Luiz Henrique"
+          userName={user?.name || "Usuário"}
           onMenuPress={handleMenuPress}
           onNotificationPress={handleNotificationPress}
           onHelpPress={handleHelpPress}

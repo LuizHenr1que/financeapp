@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
-import authService from '@/src/services/auth';
+import authService, { User as AuthUser } from '@/src/services/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -35,7 +35,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('👤 Usuário armazenado:', storedUser?.email || 'Nenhum');
         
         if (storedUser) {
-          setUser(storedUser);
+          // Mapear o usuário armazenado para o tipo correto
+          const su = storedUser as any;
+          const mappedStoredUser: User = {
+            ...storedUser,
+            isPremium: su.isPremium ?? false,
+            premiumPlan: su.premiumPlan ?? undefined,
+            premiumStartDate: su.premiumStartDate ?? undefined,
+            premiumEndDate: su.premiumEndDate ?? undefined,
+          };
+          setUser(mappedStoredUser);
           setIsAuthenticated(true);
           
           // Validar token e atualizar dados do usuário
@@ -44,12 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (response.data) {
             console.log('✅ Token válido, usuário atualizado');
             // Mapear os dados do backend para o tipo local User
+            const baseUser = (response.data as any).user ?? response.data;
             const mappedUser: User = {
-              ...response.data.user,
-              isPremium: false, // Valor padrão, pode ser atualizado pelo backend
-              premiumPlan: undefined,
-              premiumStartDate: undefined,
-              premiumEndDate: undefined
+              ...baseUser,
+              isPremium: baseUser.isPremium ?? false,
+              premiumPlan: baseUser.premiumPlan ?? undefined,
+              premiumStartDate: baseUser.premiumStartDate ?? undefined,
+              premiumEndDate: baseUser.premiumEndDate ?? undefined,
             };
             setUser(mappedUser);
           } else if (response.error) {
@@ -83,14 +93,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (response.data) {
-        console.log('✅ Login bem-sucedido!', { user: response.data.user.email });
-        // Mapear os dados do backend para o tipo local User
+        const baseUser = (response.data as any).user ?? response.data;
         const mappedUser: User = {
-          ...response.data.user,
-          isPremium: false, // Valor padrão, pode ser atualizado pelo backend
-          premiumPlan: undefined,
-          premiumStartDate: undefined,
-          premiumEndDate: undefined
+          ...baseUser,
+          isPremium: baseUser.isPremium ?? false,
+          premiumPlan: baseUser.premiumPlan ?? undefined,
+          premiumStartDate: baseUser.premiumStartDate ?? undefined,
+          premiumEndDate: baseUser.premiumEndDate ?? undefined,
         };
         setUser(mappedUser);
         setIsAuthenticated(true);
@@ -124,14 +133,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (response.data) {
-        console.log('✅ Registro bem-sucedido!', { user: response.data.user.email });
-        // Mapear os dados do backend para o tipo local User
+        const baseUser = (response.data as any).user ?? response.data;
         const mappedUser: User = {
-          ...response.data.user,
-          isPremium: false, // Valor padrão, pode ser atualizado pelo backend
-          premiumPlan: undefined,
-          premiumStartDate: undefined,
-          premiumEndDate: undefined
+          ...baseUser,
+          isPremium: baseUser.isPremium ?? false,
+          premiumPlan: baseUser.premiumPlan ?? undefined,
+          premiumStartDate: baseUser.premiumStartDate ?? undefined,
+          premiumEndDate: baseUser.premiumEndDate ?? undefined,
         };
         setUser(mappedUser);
         setIsAuthenticated(true);
@@ -162,14 +170,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (response.data) {
-        console.log('✅ Perfil atualizado com sucesso!');
-        // Mapear os dados do backend para o tipo local User
+        const baseUser = (response.data as any).user ?? response.data;
         const mappedUser: User = {
-          ...response.data.user,
-          isPremium: false, // Valor padrão, pode ser atualizado pelo backend
-          premiumPlan: undefined,
-          premiumStartDate: undefined,
-          premiumEndDate: undefined
+          ...baseUser,
+          isPremium: baseUser.isPremium ?? false,
+          premiumPlan: baseUser.premiumPlan ?? undefined,
+          premiumStartDate: baseUser.premiumStartDate ?? undefined,
+          premiumEndDate: baseUser.premiumEndDate ?? undefined,
         };
         setUser(mappedUser);
         return { success: true };

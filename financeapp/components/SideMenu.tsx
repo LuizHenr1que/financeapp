@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, SafeAreaView } from 'r
 import { X, Home, Grid3x3, CreditCard, Receipt, Target, BarChart3, User, Settings, Users, Eye, FileText, Bell } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { theme } from '@/theme';
+import { useAuth } from '@/context/AuthContext';
 
 interface SideMenuProps {
   visible: boolean;
@@ -11,6 +12,7 @@ interface SideMenuProps {
 
 export function SideMenu({ visible, onClose }: SideMenuProps) {
   const router = useRouter();
+  const { user } = useAuth();
 
   const handleNavigation = (route: string) => {
     onClose();
@@ -97,8 +99,8 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                   <User size={24} color={theme.colors.title} />
                 </View>
                 <View style={styles.userDetails}>
-                  <Text style={styles.userName}>Luiz Henrique</Text>
-                  <Text style={styles.userEmail}>luiz@gmail.com</Text>
+                  <Text style={styles.userName}>{user?.name || 'Usuário'}</Text>
+                  <Text style={styles.userEmail}>{user?.email || 'email@exemplo.com'}</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>

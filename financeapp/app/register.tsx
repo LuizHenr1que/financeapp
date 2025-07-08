@@ -212,18 +212,31 @@ export default function RegisterScreen() {
                 placeholderTextColor="#888"
               />
               <View style={styles.termsContainer}>
-                <Text style={styles.termsText}>
-                  Ao continuar estou de acordo com os
-                  <Text style={styles.termsLink} onPress={() => Linking.openURL('https://seusite.com/termos')}> termos e serviços</Text>
-                  {' '}e com o
-                  <Text style={styles.termsLink} onPress={() => Linking.openURL('https://seusite.com/privacidade')}> aviso de privacidade do InFinance</Text>
-                </Text>
+                <TouchableOpacity 
+                  style={styles.checkbox} 
+                  onPress={() => setAcceptTerms(!acceptTerms)}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons 
+                    name={acceptTerms ? 'checkbox-marked' : 'checkbox-blank-outline'} 
+                    size={20} 
+                    color={acceptTerms ? '#1db954' : '#888'} 
+                  />
+                </TouchableOpacity>
+                <View style={styles.termsTextContainer}>
+                  <Text style={styles.termsText}>
+                    Eu concordo com os
+                    <Text style={styles.termsLink} onPress={() => Linking.openURL('https://seusite.com/termos')}> termos e serviços</Text>
+                    {' '}e com o
+                    <Text style={styles.termsLink} onPress={() => Linking.openURL('https://seusite.com/privacidade')}> aviso de privacidade do InFinance</Text>
+                  </Text>
+                </View>
               </View>
               <Button
                 title={isLoading ? 'Criando...' : 'Concordar e continuar'}
                 onPress={handleRegister}
-                disabled={isLoading}
-                style={styles.loginButton}
+                disabled={isLoading || !acceptTerms}
+                style={!acceptTerms && !isLoading ? styles.buttonDisabled : styles.loginButton}
               />
               {/* Link para login */}
               <View style={styles.registerContainer}>
@@ -304,6 +317,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     backgroundColor: '#24504c',
   },
+  buttonDisabled: {
+    marginTop: 16,
+    marginBottom: 24,
+    backgroundColor: '#888',
+    opacity: 0.6,
+  },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -343,14 +362,22 @@ const styles = StyleSheet.create({
   },
   termsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
     marginLeft: 2,
+  },
+  checkbox: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  termsTextContainer: {
+    flex: 1,
   },
   termsText: {
     fontSize: 13,
     color: theme.colors.textSecondary,
     fontFamily: 'Inter-Regular',
+    lineHeight: 18,
   },
   termsLink: {
     color: '#1db954',

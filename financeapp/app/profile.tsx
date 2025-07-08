@@ -11,6 +11,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { logout, user } = useAuth();
+  console.log('👤 Dados do usuário no Profile:', user);
 
   const handleBackPress = () => {
     router.back();
@@ -74,9 +75,15 @@ export default function ProfileScreen() {
           </View>
           
           <Text style={styles.userName}>{user?.name || 'Usuário'}</Text>
-          
+          {/* Badge dinâmico */}
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>Conta ADM</Text>
+            <Text style={styles.badgeText}>
+              {user && typeof user.role === 'string' && user.role.toLowerCase() === 'admin'
+                ? 'ADM'
+                : user?.isPremium
+                  ? 'Premium'
+                  : 'Básico'}
+            </Text>
           </View>
         </View>
 
