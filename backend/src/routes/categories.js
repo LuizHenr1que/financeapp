@@ -9,5 +9,7 @@ router.use(auth);
 
 // Rotas
 router.get('/', CategoryController.index);
+router.post('/', CategoryController.store);
+router.delete('/:id', CategoryController.destroy);
 
 module.exports = router;

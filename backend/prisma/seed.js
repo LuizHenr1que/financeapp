@@ -87,24 +87,45 @@ async function main() {
 
     console.log('✅ Planos premium criados:', premiumPlans.count);
 
-    // Criar categorias padrão
+    // Cores e ícones disponíveis na tela de categorias
+    const categoryColors = [
+      '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', 
+      '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd',
+      '#00d2d3', '#ff9f43', '#10ac84', '#ee5253',
+    ];
+    const categoryIcons = [
+      'Circle', 'ShoppingCart', 'Home', 'Utensils', 'Car', 'Heart', 'Book', 'Gift', 'Film', 'Wifi', 'Smartphone', 'Briefcase', 'Globe', 'Music', 'Star',
+    ];
+    // Nomes de exemplo para categorias de despesa e receita
+    const expenseNames = [
+      'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Educação', 'Lazer', 'Compras', 'Serviços', 'Pets', 'Viagem', 'Contas', 'Outros'
+    ];
+    const incomeNames = [
+      'Salário', 'Freelance', 'Investimentos', 'Vendas', 'Reembolso', 'Prêmios', 'Outros'
+    ];
+
+    // Gera categorias de despesa
+    const expenseCategoriesSeed = categoryIcons.slice(0, expenseNames.length).map((icon, idx) => ({
+      name: expenseNames[idx],
+      type: 'expense',
+      color: categoryColors[idx % categoryColors.length],
+      icon,
+      userId: user.id
+    }));
+    // Gera categorias de receita
+    const incomeCategoriesSeed = categoryIcons.slice(0, incomeNames.length).map((icon, idx) => ({
+      name: incomeNames[idx],
+      type: 'income',
+      color: categoryColors[(idx + 5) % categoryColors.length],
+      icon,
+      userId: user.id
+    }));
+
+    // Cria categorias padrão (apenas as novas)
     const categories = await prisma.category.createMany({
       data: [
-        // Categorias de receita
-        { name: 'Salário', type: 'income', color: '#4CAF50', icon: '💰', userId: user.id },
-        { name: 'Freelance', type: 'income', color: '#2196F3', icon: '💻', userId: user.id },
-        { name: 'Investimentos', type: 'income', color: '#FF9800', icon: '📈', userId: user.id },
-        { name: 'Vendas', type: 'income', color: '#9C27B0', icon: '🛍️', userId: user.id },
-        
-        // Categorias de despesa
-        { name: 'Alimentação', type: 'expense', color: '#F44336', icon: '🍽️', userId: user.id },
-        { name: 'Transporte', type: 'expense', color: '#FF5722', icon: '🚗', userId: user.id },
-        { name: 'Moradia', type: 'expense', color: '#795548', icon: '🏠', userId: user.id },
-        { name: 'Saúde', type: 'expense', color: '#E91E63', icon: '🏥', userId: user.id },
-        { name: 'Educação', type: 'expense', color: '#3F51B5', icon: '📚', userId: user.id },
-        { name: 'Lazer', type: 'expense', color: '#9E9E9E', icon: '🎉', userId: user.id },
-        { name: 'Compras', type: 'expense', color: '#607D8B', icon: '🛒', userId: user.id },
-        { name: 'Serviços', type: 'expense', color: '#00BCD4', icon: '🔧', userId: user.id }
+        ...incomeCategoriesSeed,
+        ...expenseCategoriesSeed
       ]
     });
 
@@ -132,34 +153,6 @@ async function main() {
         userId: user.id
       }
     });
-
-    // Categorias principais para contas
-    const mainCategories = [
-      { name: 'Alimentação', type: 'expense', color: '#F44336', icon: '🍽️' },
-      { name: 'Transporte', type: 'expense', color: '#FF5722', icon: '🚗' },
-      { name: 'Moradia', type: 'expense', color: '#795548', icon: '🏠' },
-      { name: 'Saúde', type: 'expense', color: '#E91E63', icon: '🏥' },
-      { name: 'Educação', type: 'expense', color: '#3F51B5', icon: '📚' },
-      { name: 'Lazer', type: 'expense', color: '#9E9E9E', icon: '🎉' },
-      { name: 'Compras', type: 'expense', color: '#607D8B', icon: '🛒' },
-      { name: 'Serviços', type: 'expense', color: '#00BCD4', icon: '🔧' },
-      { name: 'Salário', type: 'income', color: '#4CAF50', icon: '💰' },
-      { name: 'Freelance', type: 'income', color: '#2196F3', icon: '💻' },
-      { name: 'Investimentos', type: 'income', color: '#FF9800', icon: '📈' },
-      { name: 'Vendas', type: 'income', color: '#9C27B0', icon: '🛍️' },
-    ];
-
-    // Cria categorias para cada conta
-    for (const account of [checkingAccount, savingsAccount]) {
-      await prisma.category.createMany({
-        data: mainCategories.map(cat => ({
-          ...cat,
-          userId: user.id,
-          accountId: account.id
-        }))
-      });
-    }
-    console.log('✅ Categorias principais criadas para cada conta');
 
     // Criar cartões de exemplo
     await prisma.card.createMany({

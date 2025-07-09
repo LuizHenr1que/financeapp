@@ -106,6 +106,47 @@ class DataService {
       return { error: 'Erro de conexão' };
     }
   }
+
+  // Criar nova categoria no backend
+  async createCategory(category: Omit<Category, 'id' | 'userId'>) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('📤 Enviando nova categoria para o backend...', category);
+      const response = await apiService.post<{ category: Category }>('/categories', category, token);
+      if (response.error) {
+        console.error('❌ Erro ao criar categoria:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      console.log('✅ Categoria criada no backend:', response.data?.category);
+      return { data: response.data };
+    } catch (error) {
+      console.error('❌ Erro na requisição de criação de categoria:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
+
+  // Excluir categoria do backend
+  async deleteCategory(id: string) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('🗑️ Excluindo categoria do backend...', id);
+      const response = await apiService.delete(`/categories/${id}`, token);
+      if (response.error) {
+        console.error('❌ Erro ao excluir categoria:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erro na requisição de exclusão de categoria:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
 }
 
 export default new DataService();

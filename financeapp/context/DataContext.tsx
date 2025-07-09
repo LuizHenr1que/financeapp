@@ -281,12 +281,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addCategory = async (category: Omit<Category, 'id'>) => {
-    const newCategory: Category = { ...category, id: generateId() };
+    // Impede categorias duplicadas (mesmo nome e tipo)
+    const exists = data.categories.some(
+      c => c.name.trim().toLowerCase() === category.name.trim().toLowerCase() && c.type === category.type
+    );
+    if (exists) {
+      throw new Error('Já existe uma categoria com esse nome e tipo');
+    }
+    // Envia para o backend primeiro
+    const response = await dataService.createCategory(category);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    // Usa o retorno do backend (com id e userId corretos)
+    const newCategory = response.data?.category;
+    if (!newCategory) throw new Error('Categoria não retornada pelo backend');
     const newData = { ...data, categories: [...data.categories, newCategory] };
     await saveData(newData);
   };
 
   const updateCategory = async (id: string, categoryUpdate: Partial<Category>) => {
+    // Impede duplicidade ao editar (exceto a própria)
+    if (categoryUpdate.name && categoryUpdate.type) {
+      const exists = data.categories.some(
+        c => c.id !== id && c.name.trim().toLowerCase() === categoryUpdate.name!.trim().toLowerCase() && c.type === categoryUpdate.type
+      );
+      if (exists) {
+        throw new Error('Já existe uma categoria com esse nome e tipo');
+      }
+    }
     const newData = {
       ...data,
       categories: data.categories.map(cat => cat.id === id ? { ...cat, ...categoryUpdate } : cat)
@@ -295,11 +318,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteCategory = async (id: string) => {
-    const newData = {
-      ...data,
-      categories: data.categories.filter(cat => cat.id !== id)
-    };
-    await saveData(newData);
+    // Exclui do backend primeiro
+    const response = await dataService.deleteCategory(id);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    // Após excluir, recarrega do backend para garantir sincronização
+    await loadCategories();
   };
 
   const addCard = async (card: Omit<Card, 'id'>) => {

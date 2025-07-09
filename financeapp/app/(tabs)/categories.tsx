@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, FlatList } from 'react-native';
 import { Plus, CreditCard as Edit3, Trash2, Circle, ShoppingCart, Home, Utensils, Car, Heart, Book, Gift, Film, Wifi, Smartphone, Briefcase, Globe, Music, Star, Check } from 'lucide-react-native';
 import { Modalize } from 'react-native-modalize';
@@ -21,17 +21,11 @@ const colors = [
 
 export default function CategoriesScreen() {
   const { data, addCategory, updateCategory, deleteCategory } = useData();
-  const [isEditing, setIsEditing] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    color: '#1de9b6',
-    icon: 'Circle',
-    type: 'expense' as 'income' | 'expense',
-  });
-  const modalizeRef = useRef<Modalize>(null);
   const categoryModalRef = useRef<CategoryModalRef>(null);
-  const [isEssential, setIsEssential] = useState(false);
+  const [modalInitialData, setModalInitialData] = useState<any>(null);
+  const [pendingSave, setPendingSave] = useState<any>(null);
+  const prevCategoriesLength = useRef(data.categories.length);
 
   const iconOptions = [
     'Circle', 'ShoppingCart', 'Home', 'Utensils', 'Car', 'Heart', 'Book', 'Gift', 'Film', 'Wifi', 'Smartphone', 'Briefcase', 'Globe', 'Music', 'Star',
@@ -67,14 +61,22 @@ export default function CategoriesScreen() {
   };
 
   const handleEdit = (category: Category) => {
-    setEditingCategory(category);
-    setFormData({
+    setModalInitialData({
       name: category.name,
       color: category.color,
       icon: category.icon,
       type: category.type,
     });
-    setIsEditing(true);
+    setEditingCategory(category);
+    setTimeout(() => {
+      categoryModalRef.current?.open();
+    }, 0);
+  };
+
+  const handleAdd = () => {
+    setEditingCategory(null);
+    setModalInitialData(null);
+    categoryModalRef.current?.open();
   };
 
   const handleDelete = (categoryId: string) => {
@@ -92,56 +94,52 @@ export default function CategoriesScreen() {
     );
   };
 
-  const handleSave = async () => {
-    if (!formData.name.trim()) {
+  // Salvar categoria e aguardar atualização do contexto antes de fechar o modal
+  const handleModalSave = async (form: any) => {
+    if (!form.name.trim()) {
       Alert.alert('Erro', 'Digite o nome da categoria');
       return;
     }
-
     try {
       if (editingCategory) {
-        await updateCategory(editingCategory.id, formData);
+        setPendingSave({ ...form, id: editingCategory.id });
       } else {
-        await addCategory(formData);
+        setPendingSave(form);
       }
-      resetForm();
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar a categoria');
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Não foi possível salvar a categoria');
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      color: '#1de9b6',
-      icon: 'Circle',
-      type: 'expense',
-    });
-    setEditingCategory(null);
-    setIsEditing(false);
-  };
-
-  const openModal = () => {
-    categoryModalRef.current?.open();
-  };
-
-  const closeModal = () => {
-    // Apenas resete estados locais se necessário, não chame categoryModalRef.current?.close() aqui!
-    // Exemplo: setIsEditing(false); ou outros resets, se precisar
-  };
-
-  const handleModalSave = async (data: any) => {
-    if (!data.name.trim()) {
-      Alert.alert('Erro', 'Digite o nome da categoria');
-      return;
+  // Fecha o modal somente após a atualização do contexto
+  useEffect(() => {
+    if (pendingSave) {
+      const save = async () => {
+        try {
+          if (pendingSave.id) {
+            await updateCategory(pendingSave.id, pendingSave);
+          } else {
+            await addCategory(pendingSave);
+          }
+          setEditingCategory(null);
+          setModalInitialData(null);
+        } catch (error: any) {
+          Alert.alert('Erro', error.message || 'Não foi possível salvar a categoria');
+        } finally {
+          setPendingSave(null);
+        }
+      };
+      save();
     }
-    try {
-      await addCategory({ ...data });
-      closeModal();
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar a categoria');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSave]);
+
+  useEffect(() => {
+    if (pendingSave === null && prevCategoriesLength.current !== data.categories.length) {
+      categoryModalRef.current?.close();
+      prevCategoriesLength.current = data.categories.length;
     }
-  };
+  }, [data.categories.length, pendingSave]);
 
   const incomeCategories = data.categories.filter(cat => cat.type === 'income');
   const expenseCategories = data.categories.filter(cat => cat.type === 'expense');
@@ -153,93 +151,6 @@ export default function CategoriesScreen() {
   
   if (data.categories.length > 0) {
     console.log('📋 Primeiras categorias:', data.categories.slice(0, 3).map(c => ({ id: c.id, name: c.name, type: c.type })));
-  }
-
-  if (isEditing) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.editHeader}>
-          <Text style={styles.editTitle}>
-            {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
-          </Text>
-          <TouchableOpacity onPress={resetForm} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Fechar</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          <Card>
-            <Input
-              label="Nome da Categoria"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-              placeholder="Ex: Alimentação"
-            />
-
-            <Text style={styles.sectionTitle}>Tipo</Text>
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  formData.type === 'income' && styles.typeButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, type: 'income' })}
-              >
-                <Text style={[
-                  styles.typeButtonText,
-                  formData.type === 'income' && styles.typeButtonTextActive,
-                ]}>
-                  Receita
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  formData.type === 'expense' && styles.typeButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, type: 'expense' })}
-              >
-                <Text style={[
-                  styles.typeButtonText,
-                  formData.type === 'expense' && styles.typeButtonTextActive,
-                ]}>
-                  Despesa
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.sectionTitle}>Cor</Text>
-            <View style={styles.colorGrid}>
-              {colors.map(color => (
-                <TouchableOpacity
-                  key={color}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color },
-                    formData.color === color && styles.colorOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, color })}
-                />
-              ))}
-            </View>
-
-            <View style={styles.buttonRow}>
-              <Button
-                title="Cancelar"
-                onPress={resetForm}
-                variant="outline"
-                style={styles.button}
-              />
-              <Button
-                title="Salvar"
-                onPress={handleSave}
-                style={styles.button}
-              />
-            </View>
-          </Card>
-        </ScrollView>
-      </View>
-    );
   }
 
   return (
@@ -254,7 +165,7 @@ export default function CategoriesScreen() {
         {/* Add Category Button */}
         <Card style={styles.addButtonCard}>
           <TouchableOpacity
-            onPress={openModal}
+            onPress={handleAdd}
             style={styles.addCategoryButton}
           >
             <Plus size={24} color={theme.colors.primary} />
@@ -334,12 +245,16 @@ export default function CategoriesScreen() {
           )}
         </Card>
       </ScrollView>
-      {/* Modal de Nova Categoria */}
+      {/* Modal de Nova Categoria ou Edição */}
       <CategoryModal
         ref={categoryModalRef}
-        onClose={closeModal}
+        onClose={() => {
+          setEditingCategory(null);
+          setModalInitialData(null);
+        }}
         onSave={handleModalSave}
         colors={colors}
+        initialData={modalInitialData}
       />
     </View>
   );

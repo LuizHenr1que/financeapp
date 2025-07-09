@@ -60,6 +60,7 @@ export default function ProfileScreen() {
 
       <ScrollView 
         style={[styles.content, { paddingTop: insets.top + theme.spacing.lg }]} 
+        contentContainerStyle={{ paddingBottom: 150 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
@@ -268,6 +269,7 @@ const styles = StyleSheet.create({
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    
   },
   menuItemText: {
     fontSize: theme.typography.medium,

@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import { enableScreens } from 'react-native-screens';
+enableScreens();
+
+import { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,16 +17,20 @@ import { CustomSplashScreen } from '@/components';
 import { useLoading } from '@/context/LoadingContext';
 import AppRoutes from './AppRoutes';
 
+// Controle global do splash
+let splashAlreadyShown = false;
+
 function AppContent() {
   return <AppRoutes />;
 }
 
 export default function RootLayout() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(!splashAlreadyShown);
   useFrameworkReady();
 
   const handleSplashFinish = () => {
     setShowSplash(false);
+    splashAlreadyShown = true;
   };
 
   if (showSplash) {

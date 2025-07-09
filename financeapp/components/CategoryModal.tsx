@@ -6,6 +6,7 @@ import { theme } from '@/theme';
 import InputLogin from '@/components/InputLogin';
 import { Button } from '@/components/Button';
 import { PiggyBank, Coffee, ShoppingBag, DollarSign, Apple, Beer, Camera, Cloud, Cpu, Droplet, Feather, Flag, Leaf, Lightbulb, MapPin, Moon, Sun, Target, Thermometer, Truck, User, Users, Watch, Zap, Bell, Calendar, Clipboard, Eye, Folder, Key, Lock, Pen, Phone, Printer, Scissors, Send, Settings, Shield, ShoppingCart as Cart2, Smile, Speaker, ThumbsUp, Trash2, Wifi as Wifi2 } from 'lucide-react-native';
+import { useData } from '@/context/DataContext';
 
 const iconOptions = [
   'Circle', 'ShoppingCart', 'Home', 'Utensils', 'Car', 'Heart', 'Book', 'Gift', 'Film', 'Wifi', 'Smartphone', 'Briefcase', 'Globe', 'Music', 'Star',
@@ -102,177 +103,252 @@ interface Props {
   } | null;
 }
 
-export const CategoryModal = forwardRef<CategoryModalRef, Props>(({ onClose, onClosed, onSave, colors, initialData }, ref) => {
-  const modalizeRef = useRef<Modalize>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    color: colors[0] || '#1de9b6',
-    icon: 'Circle',
-    type: 'expense',
-  });
-  const [isEssential, setIsEssential] = useState(false);
-  const [pendingData, setPendingData] = useState<typeof initialData | null>(null);
+export const CategoryModal = forwardRef<CategoryModalRef, Props>(
+  (
+    {
+      onClose,
+      onClosed,
+      onSave,
+      colors,
+      initialData
+    }: Props,
+    ref: React.Ref<CategoryModalRef>
+  ) => {
+    const { data } = useData();
+    const modalizeRef = useRef<Modalize>(null);
+    const [formData, setFormData] = useState<{
+      name: string;
+      color: string;
+      icon: string;
+      type: string;
+    }>({
+      name: '',
+      color: colors[0] || '#1de9b6',
+      icon: 'Circle',
+      type: 'expense',
+    });
+    const [isEssential, setIsEssential] = useState(false);
 
-  // Atualiza o pendingData ao abrir para edição
-  const handleOpen = useCallback(() => {
-    setPendingData(initialData || null);
-    modalizeRef.current?.open();
-  }, [initialData]);
+    // Atualiza o formData apenas quando o modal abrir
+    const handleModalOpened = useCallback(() => {
+      if (initialData) {
+        setFormData({
+          name: initialData.name,
+          color: initialData.color,
+          icon: initialData.icon,
+          type: initialData.type,
+        });
+      } else {
+        setFormData({ name: '', color: colors[0] || '#1de9b6', icon: 'Circle', type: 'expense' });
+      }
+      setIsEssential(false);
+    }, [initialData, colors]);
 
-  // Quando o modal realmente abrir, atualiza o formData
-  const handleModalOpened = useCallback(() => {
-    if (pendingData) {
-      setFormData({
-        name: pendingData.name,
-        color: pendingData.color,
-        icon: pendingData.icon,
-        type: pendingData.type,
-      });
-    } else {
-      setFormData({ name: '', color: colors[0] || '#1de9b6', icon: 'Circle', type: 'expense' });
-    }
-    setIsEssential(false);
-  }, [pendingData, colors]);
+    // Garante que ao mudar initialData (abrir para editar outra categoria), o formData seja atualizado
+    React.useEffect(() => {
+      if (initialData) {
+        setFormData({
+          name: initialData.name,
+          color: initialData.color,
+          icon: initialData.icon,
+          type: initialData.type,
+        });
+      } else {
+        setFormData({ name: '', color: colors[0] || '#1de9b6', icon: 'Circle', type: 'expense' });
+      }
+    }, [initialData, colors]);
 
-  const handleClose = useCallback(() => {
-    modalizeRef.current?.close();
-  }, []);
+    // Função para abrir o modal
+    const handleOpen = useCallback(() => {
+      modalizeRef.current?.open();
+    }, []);
 
-  useImperativeHandle(ref, () => ({
-    open: handleOpen,
-    close: handleClose,
-  }), [handleOpen, handleClose]);
+    const handleClose = useCallback(() => {
+      modalizeRef.current?.close();
+    }, []);
 
-  // Função estável para evitar re-renderizações desnecessárias
-  const handleInputChange = useCallback((text: string) => {
-    setFormData(prev => ({ ...prev, name: text }));
-  }, []);
+    useImperativeHandle(ref, () => ({
+      open: handleOpen,
+      close: handleClose,
+    }), [handleOpen, handleClose]);
 
-  const handleColorSelect = useCallback((color: string) => {
-    setFormData(prev => ({ ...prev, color }));
-  }, []);
+    // Função estável para evitar re-renderizações desnecessárias
+    const handleInputChange = useCallback((text: string) => {
+      setFormData((prev: typeof formData) => ({ ...prev, name: text }));
+    }, []);
 
-  const handleIconSelect = useCallback((icon: string) => {
-    setFormData(prev => ({ ...prev, icon }));
-  }, []);
+    const handleColorSelect = useCallback((color: string) => {
+      setFormData((prev: typeof formData) => ({ ...prev, color }));
+    }, []);
 
-  const handleSave = useCallback(() => {
-    if (!formData.name.trim()) {
-      return;
-    }
-    onSave({ ...formData, essential: isEssential });
-    modalizeRef.current?.close();
-  }, [formData, isEssential, onSave]);
+    const handleIconSelect = useCallback((icon: string) => {
+      setFormData((prev: typeof formData) => ({ ...prev, icon }));
+    }, []);
 
-  return (
-    <Modalize
-      ref={modalizeRef}
-      adjustToContentHeight
-      handleStyle={{ backgroundColor: theme.colors.primary }}
-      modalStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: theme.borderRadius.large, borderTopRightRadius: theme.borderRadius.large }}
-      onClose={onClose}
-      onClosed={onClosed}
-      onOpened={handleModalOpened}
-    >
-      <View style={styles.modalContent}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Nome da Categoria</Text>
-          <InputLogin
-            value={formData.name}
-            onChangeText={handleInputChange}
-            placeholder="Ex: Alimentação"
-            containerStyle={{ marginBottom: 0 }}
-          />
-        </View>
-        <Text style={styles.sectionTitle}>Cor</Text>
-        <FlatList
-          data={colors}
-          horizontal
-          keyExtractor={(item) => item}
-          contentContainerStyle={{ marginBottom: theme.spacing.md }}
-          renderItem={({ item: color }) => (
+    const handleSave = useCallback(() => {
+      if (!formData.name.trim()) {
+        return;
+      }
+      // Verificação local de duplicidade
+      let editingId = undefined;
+      if (initialData) {
+        const found = data.categories.find(c => c.name === initialData.name && c.type === initialData.type && c.color === initialData.color && c.icon === initialData.icon);
+        if (found) editingId = found.id;
+      }
+      const isDuplicate = data.categories.some(
+        c => c.name.trim().toLowerCase() === formData.name.trim().toLowerCase() &&
+             c.type === formData.type &&
+             (!editingId || c.id !== editingId)
+      );
+      if (isDuplicate) {
+        alert('Já existe uma categoria com esse nome e tipo!');
+        return;
+      }
+      onSave({ ...formData, essential: isEssential });
+      modalizeRef.current?.close();
+    }, [formData, isEssential, onSave, data.categories, initialData]);
+
+    return (
+      <Modalize
+        ref={modalizeRef}
+        adjustToContentHeight
+        handleStyle={{ backgroundColor: theme.colors.primary }}
+        modalStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: theme.borderRadius.large, borderTopRightRadius: theme.borderRadius.large }}
+        onClose={onClose}
+        onClosed={onClosed}
+        onOpened={handleModalOpened}
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Nome da Categoria</Text>
+            <InputLogin
+              value={formData.name}
+              onChangeText={handleInputChange}
+              placeholder="Ex: Alimentação"
+              containerStyle={{ marginBottom: 0 }}
+            />
+          </View>
+          {/* Botões para selecionar tipo de categoria */}
+          <View style={styles.typeRow}>
             <TouchableOpacity
               style={[
-                styles.colorOption,
-                { backgroundColor: color },
-                formData.color === color && styles.colorOptionSelected,
+                styles.typeButton,
+                formData.type === 'expense' && styles.typeButtonActive,
               ]}
-              onPress={() => handleColorSelect(color)}
-            />
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
-        <Text style={styles.sectionTitle}>Escolha um ícone</Text>
-        <FlatList
-          data={getIconGrid(iconOptions, 3)}
-          horizontal
-          keyExtractor={(_, idx) => 'col-' + idx}
-          contentContainerStyle={{ marginBottom: theme.spacing.md }}
-          initialNumToRender={4} // Renderiza só 4 colunas inicialmente
-          windowSize={5} // Mantém poucas colunas em memória
-          removeClippedSubviews={true} // Remove colunas fora da tela
-          renderItem={({ item: col }) => (
-            <View style={{ flexDirection: 'column', marginRight: theme.spacing.md }}>
-              {col.map((icon) => {
-                const Icon = iconComponents[icon as keyof typeof iconComponents];
-                const isSelected = formData.icon === icon;
-                return (
-                  <TouchableOpacity
-                    key={icon}
-                    style={[
-                      styles.iconOption,
-                      isSelected && styles.iconOptionSelected,
-                    ]}
-                    onPress={() => handleIconSelect(icon)}
-                  >
-                    <Icon size={28} color={isSelected ? theme.colors.primary : theme.colors.textSecondary} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
-        {/* deixar comentado por enquanto */}
-        {/* <View style={styles.essentialRow}>
-          <TouchableOpacity
-            style={styles.essentialCard}
-            onPress={() => setIsEssential(!isEssential)}
-            activeOpacity={0.85}
-          >
-            <View style={styles.essentialCardContent}>
-              <View style={[
-                styles.checkbox,
-                isEssential && styles.checkboxChecked,
+              onPress={() => setFormData((prev: typeof formData) => ({ ...prev, type: 'expense' }))}
+            >
+              <Text style={[
+                styles.typeButtonText,
+                formData.type === 'expense' && styles.typeButtonTextActive,
               ]}>
-                <View style={[
-                  styles.checkboxInner,
-                  isEssential && styles.checkboxInnerChecked,
-                ]}>
-                  {isEssential && <Check size={20} color={theme.colors.primary} />}
-                </View>
+                Despesa
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.typeButton,
+                formData.type === 'income' && styles.typeButtonActive,
+              ]}
+              onPress={() => setFormData((prev: typeof formData) => ({ ...prev, type: 'income' }))}
+            >
+              <Text style={[
+                styles.typeButtonText,
+                formData.type === 'income' && styles.typeButtonTextActive,
+              ]}>
+                Receita
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.sectionTitle}>Cor</Text>
+          <FlatList
+            data={colors}
+            horizontal
+            keyExtractor={(item: string) => item}
+            contentContainerStyle={{ marginBottom: theme.spacing.md }}
+            renderItem={({ item }: { item: string }) => (
+              <TouchableOpacity
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: item },
+                  formData.color === item && styles.colorOptionSelected,
+                ]}
+                onPress={() => handleColorSelect(item)}
+              />
+            )}
+            showsHorizontalScrollIndicator={false}
+          />
+          <Text style={styles.sectionTitle}>Escolha um ícone</Text>
+          <FlatList
+            data={getIconGrid(iconOptions, 3)}
+            horizontal
+            keyExtractor={(_: string[], idx: number) => 'col-' + idx}
+            contentContainerStyle={{ marginBottom: theme.spacing.md }}
+            initialNumToRender={4}
+            windowSize={5}
+            removeClippedSubviews={true}
+            renderItem={({ item: col }: { item: string[] }) => (
+              <View style={{ flexDirection: 'column', marginRight: theme.spacing.md }}>
+                {col.map((icon: string) => {
+                  const Icon = iconComponents[icon as keyof typeof iconComponents];
+                  const isSelected = formData.icon === icon;
+                  return (
+                    <TouchableOpacity
+                      key={icon}
+                      style={[
+                        styles.iconOption,
+                        isSelected && styles.iconOptionSelected,
+                      ]}
+                      onPress={() => handleIconSelect(icon)}
+                    >
+                      <Icon size={28} color={isSelected ? theme.colors.primary : theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-              <Text style={styles.essentialLabel}>Marcar como essencial</Text>
-            </View>
-          </TouchableOpacity>
-        </View> */}
-        <View style={styles.buttonRow}>
-          <Button
-            title="Cancelar"
-            onPress={handleClose}
-            variant="outline"
-            style={styles.button}
+            )}
+            showsHorizontalScrollIndicator={false}
           />
-          <Button
-            title="Salvar"
-            onPress={handleSave}
-            style={styles.button}
-          />
+          {/* deixar comentado por enquanto */}
+          {/* <View style={styles.essentialRow}>
+            <TouchableOpacity
+              style={styles.essentialCard}
+              onPress={() => setIsEssential(!isEssential)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.essentialCardContent}>
+                <View style={[
+                  styles.checkbox,
+                  isEssential && styles.checkboxChecked,
+                ]}>
+                  <View style={[
+                    styles.checkboxInner,
+                    isEssential && styles.checkboxInnerChecked,
+                  ]}>
+                    {isEssential && <Check size={20} color={theme.colors.primary} />}
+                  </View>
+                </View>
+                <Text style={styles.essentialLabel}>Marcar como essencial</Text>
+              </View>
+            </TouchableOpacity>
+          </View> */}
+          <View style={styles.buttonRow}>
+            <Button
+              title="Cancelar"
+              onPress={handleClose}
+              variant="outline"
+              style={styles.button}
+            />
+            <Button
+              title="Salvar"
+              onPress={handleSave}
+              style={styles.button}
+            />
+          </View>
         </View>
-      </View>
-    </Modalize>
-  );
-});
+      </Modalize>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   modalContent: {
@@ -395,5 +471,31 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 14,
     marginBottom: 6,
+  },
+  typeRow: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  typeButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.medium,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+  },
+  typeButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  typeButtonText: {
+    fontSize: theme.typography.medium,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  typeButtonTextActive: {
+    color: theme.colors.title,
   },
 });
