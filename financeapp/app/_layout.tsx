@@ -17,6 +17,8 @@ import { CustomSplashScreen } from '@/components';
 import { useLoading } from '@/context/LoadingContext';
 import AppRoutes from './AppRoutes';
 
+import Toast from 'react-native-toast-message';
+
 // Controle global do splash
 let splashAlreadyShown = false;
 
@@ -46,6 +48,7 @@ export default function RootLayout() {
               <MenuModalProvider>
                 <TransactionTypeModalProvider>
                   <AppContent />
+                  <Toast />
                 </TransactionTypeModalProvider>
               </MenuModalProvider>
             </DataProvider>

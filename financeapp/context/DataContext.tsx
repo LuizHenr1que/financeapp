@@ -4,6 +4,7 @@ import { AppData, Category, Card, Transaction, Goal } from '@/types';
 import transactionsService, { CreateTransactionRequest } from '@/src/services/transactions';
 import dataService from '@/src/services/data';
 import { useAuth } from './AuthContext';
+import Toast from 'react-native-toast-message';
 
 interface DataContextType {
   data: AppData;
@@ -286,18 +287,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       c => c.name.trim().toLowerCase() === category.name.trim().toLowerCase() && c.type === category.type
     );
     if (exists) {
+      Toast.show({ type: 'error', text1: 'Já existe uma categoria com esse nome e tipo' });
       throw new Error('Já existe uma categoria com esse nome e tipo');
     }
     // Envia para o backend primeiro
     const response = await dataService.createCategory(category);
     if (response.error) {
+      Toast.show({ type: 'error', text1: response.error });
       throw new Error(response.error);
     }
     // Usa o retorno do backend (com id e userId corretos)
     const newCategory = response.data?.category;
-    if (!newCategory) throw new Error('Categoria não retornada pelo backend');
+    if (!newCategory) {
+      Toast.show({ type: 'error', text1: 'Categoria não retornada pelo backend' });
+      throw new Error('Categoria não retornada pelo backend');
+    }
     const newData = { ...data, categories: [...data.categories, newCategory] };
     await saveData(newData);
+    Toast.show({ type: 'success', text1: response.message || 'Categoria criada com sucesso' });
   };
 
   const updateCategory = async (id: string, categoryUpdate: Partial<Category>) => {
@@ -307,22 +314,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         c => c.id !== id && c.name.trim().toLowerCase() === categoryUpdate.name!.trim().toLowerCase() && c.type === categoryUpdate.type
       );
       if (exists) {
+        Toast.show({ type: 'error', text1: 'Já existe uma categoria com esse nome e tipo' });
         throw new Error('Já existe uma categoria com esse nome e tipo');
       }
     }
-    const newData = {
-      ...data,
-      categories: data.categories.map(cat => cat.id === id ? { ...cat, ...categoryUpdate } : cat)
-    };
-    await saveData(newData);
+    // Atualiza no backend primeiro
+    const response = await dataService.updateCategory(id, categoryUpdate);
+    if (response.error) {
+      Toast.show({ type: 'error', text1: response.error });
+      throw new Error(response.error);
+    }
+    Toast.show({ type: 'success', text1: response.message || 'Categoria atualizada com sucesso' });
+    // Após atualizar, recarrega do backend para garantir sincronização
+    await loadCategories();
   };
 
   const deleteCategory = async (id: string) => {
     // Exclui do backend primeiro
     const response = await dataService.deleteCategory(id);
     if (response.error) {
+      Toast.show({ type: 'error', text1: response.error });
       throw new Error(response.error);
     }
+    Toast.show({ type: 'success', text1: typeof response.message === 'string' ? response.message : 'Categoria excluída com sucesso' });
     // Após excluir, recarrega do backend para garantir sincronização
     await loadCategories();
   };

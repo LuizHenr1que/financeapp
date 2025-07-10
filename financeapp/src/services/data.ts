@@ -121,7 +121,7 @@ class DataService {
         return { error: response.error, details: response.details };
       }
       console.log('✅ Categoria criada no backend:', response.data?.category);
-      return { data: response.data };
+      return { data: response.data, message: 'Categoria criada com sucesso' };
     } catch (error) {
       console.error('❌ Erro na requisição de criação de categoria:', error);
       return { error: 'Erro de conexão' };
@@ -141,9 +141,30 @@ class DataService {
         console.error('❌ Erro ao excluir categoria:', response.error);
         return { error: response.error, details: response.details };
       }
-      return { success: true };
+      // Corrige: retorna mensagem do backend se existir, senão mensagem padrão
+      return { success: true, message: (response.data && (response.data as { message?: string }).message) || 'Categoria excluída com sucesso' };
     } catch (error) {
       console.error('❌ Erro na requisição de exclusão de categoria:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
+
+  // Atualizar categoria no backend
+  async updateCategory(id: string, categoryUpdate: Partial<Category>) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('✏️ Atualizando categoria no backend...', id, categoryUpdate);
+      const response = await apiService.put<{ category: Category }>(`/categories/${id}`, categoryUpdate, token);
+      if (response.error) {
+        console.error('❌ Erro ao atualizar categoria:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      return { data: response.data, message: 'Categoria atualizada com sucesso' };
+    } catch (error) {
+      console.error('❌ Erro na requisição de atualização de categoria:', error);
       return { error: 'Erro de conexão' };
     }
   }
