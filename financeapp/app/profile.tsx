@@ -6,12 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/theme';
 import { Card } from '@/components/Card';
 import { useAuth } from '@/context/AuthContext';
+import { Modalize } from 'react-native-modalize';
+import { useRef } from 'react';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { logout, user } = useAuth();
   console.log('👤 Dados do usuário no Profile:', user);
+
+  const logoutModalRef = useRef<Modalize>(null);
 
   const handleBackPress = () => {
     router.back();
@@ -57,7 +61,6 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={theme.colors.background} barStyle="dark-content" />
-
       <ScrollView 
         style={[styles.content, { paddingTop: insets.top + theme.spacing.lg }]} 
         contentContainerStyle={{ paddingBottom: 150 }}
@@ -172,7 +175,7 @@ export default function ProfileScreen() {
           <Card style={[styles.menuCard, styles.logoutCard]}>
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={handleLogout}
+              onPress={() => logoutModalRef.current?.open()}
             >
               <View style={styles.menuItemLeft}>
                 <LogOut size={24} color={theme.colors.error} />
@@ -183,6 +186,33 @@ export default function ProfileScreen() {
           </Card>
         </View>
       </ScrollView>
+
+      {/* Modalize de confirmação de logout */}
+      <Modalize
+        ref={logoutModalRef}
+        adjustToContentHeight
+        handleStyle={{ backgroundColor: theme.colors.primary, width: 60, alignSelf: 'center' }}
+        modalStyle={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
+      >
+        <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Você tem certeza?</Text>
+          <Text style={{ fontSize: 15, color: '#555', marginBottom: 24, textAlign: 'center' }}>Deseja realmente sair da sua conta?</Text>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <TouchableOpacity
+              style={{ paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8, backgroundColor: theme.colors.primarySoft, marginRight: 8 }}
+              onPress={() => logoutModalRef.current?.close()}
+            >
+              <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8, backgroundColor: theme.colors.error }}
+              onPress={async () => { logoutModalRef.current?.close(); await handleLogout(); }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Sair</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modalize>
     </View>
   );
 }

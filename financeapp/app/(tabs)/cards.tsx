@@ -8,7 +8,6 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Header } from '@/components/Header';
 import { Card as CardType } from '@/types';
-import { CardVisual } from './cardsVisual';
 import { AddCardMethodModal } from '@/components/AddCardMethodModal';
 import { Modalize } from 'react-native-modalize';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -345,7 +344,7 @@ export default function CardsScreen() {
             );
           })
         )}
-        <View style={styles.cardVisualContainer}>
+        {/* <View style={styles.cardVisualContainer}>
           <CardVisual
             variant="visa"
             backgroundColor="#232323"
@@ -361,7 +360,7 @@ export default function CardsScreen() {
             number="**** **** **** 1690"
             exp="01/22"
           />
-        </View>
+        </View> */}
       </ScrollView>
       {/* Modal de escolha do método de cadastro do cartão */}
       <AddCardMethodModal
