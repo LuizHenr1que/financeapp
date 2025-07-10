@@ -29,6 +29,7 @@ export interface Account {
   color: string;
   icon: string;
   userId: string;
+  includeInTotal: boolean; // Adicionado para checkbox
 }
 
 class DataService {
@@ -165,6 +166,44 @@ class DataService {
       return { data: response.data, message: 'Categoria atualizada com sucesso' };
     } catch (error) {
       console.error('❌ Erro na requisição de atualização de categoria:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
+
+  async updateAccount(id: string, accountUpdate: Partial<Account>) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('✏️ Atualizando conta no backend...', id, accountUpdate);
+      const response = await apiService.put<{ account: Account }>(`/accounts/${id}`, accountUpdate, token);
+      if (response.error) {
+        console.error('❌ Erro ao atualizar conta:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      return { data: response.data, message: 'Conta atualizada com sucesso' };
+    } catch (error) {
+      console.error('❌ Erro na requisição de atualização de conta:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
+
+  async deleteAccount(id: string) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('🗑️ Excluindo conta do backend...', id);
+      const response = await apiService.delete(`/accounts/${id}`, token);
+      if (response.error) {
+        console.error('❌ Erro ao excluir conta:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      return { success: true, message: (response.data && (response.data as { message?: string }).message) || 'Conta excluída com sucesso' };
+    } catch (error) {
+      console.error('❌ Erro na requisição de exclusão de conta:', error);
       return { error: 'Erro de conexão' };
     }
   }

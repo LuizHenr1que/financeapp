@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import { theme } from '@/theme';
+import Toast from 'react-native-toast-message';
 
 export type AccountOptionsModalRef = {
   open: () => void;
@@ -13,13 +14,18 @@ type Props = {
   includeInTotal: boolean;
   setIncludeInTotal: (v: boolean) => void;
   onClose: () => void;
-  onEdit: () => void;
+  onEdit: (balance: string) => void;
   onDelete: () => void;
 };
 
 export const AccountOptionsModal = React.forwardRef<AccountOptionsModalRef, Props>(
   ({ selectedAccount, includeInTotal, setIncludeInTotal, onClose, onEdit, onDelete }, ref) => {
     const modalRef = React.useRef<Modalize>(null);
+    const [balance, setBalance] = useState('');
+
+    useEffect(() => {
+      setBalance(selectedAccount ? String(selectedAccount.balance ?? '') : '');
+    }, [selectedAccount]);
 
     React.useImperativeHandle(ref, () => ({
       open: () => modalRef.current?.open(),
@@ -38,9 +44,14 @@ export const AccountOptionsModal = React.forwardRef<AccountOptionsModalRef, Prop
           <View>
             <Text style={styles.title}>Mais opções</Text>
             <Text style={styles.label}>Saldo atual</Text>
-            <Text style={[styles.input, { marginBottom: 12, borderWidth: 0, backgroundColor: 'transparent', color: theme.colors.text, paddingVertical: 0 }]}>
-              R$ {Number(selectedAccount.balance || 0).toFixed(2)}
-            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="R$ 0,00"
+              value={balance}
+              onChangeText={setBalance}
+              keyboardType="numeric"
+              placeholderTextColor={theme.colors.textSecondary}
+            />
             <TouchableOpacity
               style={[
                 styles.selectInput,
@@ -77,10 +88,22 @@ export const AccountOptionsModal = React.forwardRef<AccountOptionsModalRef, Prop
               <TouchableOpacity style={[styles.saveButton, { backgroundColor: theme.colors.border, width: '100%' }]} onPress={onClose}>
                 <Text style={[styles.saveButtonText, { color: theme.colors.text }]}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveButton, { width: '100%' }]} onPress={onEdit}>
+              <TouchableOpacity
+                style={[styles.saveButton, { width: '100%' }]}
+                onPress={() => {
+                  onEdit(balance);
+                  Toast.show({ type: 'success', text1: 'Conta editada com sucesso!' });
+                }}
+              >
                 <Text style={styles.saveButtonText}>Editar conta</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveButton, { backgroundColor: theme.colors.error, width: '100%' }]} onPress={onDelete}>
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: theme.colors.error, width: '100%' }]}
+                onPress={() => {
+                  onDelete();
+                  Toast.show({ type: 'success', text1: 'Conta excluída com sucesso!' });
+                }}
+              >
                 <Text style={styles.saveButtonText}>Excluir conta</Text>
               </TouchableOpacity>
             </View>

@@ -38,6 +38,7 @@ export interface Account {
   balance: number;
   color: string;
   icon: string;
+  includeInTotal: boolean; // Adicionado para checkbox
 }
 
 export interface Transaction {

@@ -22,7 +22,7 @@ class AccountController {
   async create(req, res) {
     try {
       const userId = req.user.id;
-      const { name, type, color, icon, balance } = req.body;
+      const { name, type, color, icon, balance, includeInTotal } = req.body;
       // Cria a conta
       const account = await prisma.account.create({
         data: {
@@ -31,6 +31,7 @@ class AccountController {
           color,
           icon,
           balance: balance !== undefined ? balance : 0,
+          includeInTotal: includeInTotal !== undefined ? includeInTotal : true,
           userId,
         },
       });
@@ -68,10 +69,50 @@ class AccountController {
           accountId: account.id
         }))
       });
-      res.status(201).json({ account, message: 'Conta, cartão e categorias principais criados com sucesso!' });
+      res.status(201).json({ account, message: 'Conta cadastrada com sucesso!' });
     } catch (error) {
       console.error('Erro ao criar conta:', error);
       res.status(500).json({ error: 'Erro ao criar conta' });
+    }
+  }
+
+  // Editar conta
+  async update(req, res) {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+      const { name, type, color, icon, balance, includeInTotal } = req.body;
+      // Só permite editar contas do próprio usuário
+      const account = await prisma.account.findFirst({ where: { id, userId } });
+      if (!account) {
+        return res.status(404).json({ error: 'Conta não encontrada' });
+      }
+      const updated = await prisma.account.update({
+        where: { id },
+        data: { name, type, color, icon, balance, includeInTotal },
+      });
+      res.json({ account: updated, message: 'Conta editada com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao editar conta:', error);
+      res.status(500).json({ error: 'Erro ao editar conta' });
+    }
+  }
+
+  // Excluir conta
+  async delete(req, res) {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+      // Só permite excluir contas do próprio usuário
+      const account = await prisma.account.findFirst({ where: { id, userId } });
+      if (!account) {
+        return res.status(404).json({ error: 'Conta não encontrada' });
+      }
+      await prisma.account.delete({ where: { id } });
+      res.json({ message: 'Conta excluída com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao excluir conta:', error);
+      res.status(500).json({ error: 'Erro ao excluir conta' });
     }
   }
 }

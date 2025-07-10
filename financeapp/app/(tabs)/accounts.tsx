@@ -14,6 +14,7 @@ import api from '@/src/services/api';
 import authService from '@/src/services/auth';
 import { useAuth } from '@/context/AuthContext';
 import { ICONS } from '@/components/AccountIconSelectorModal';
+import Toast from 'react-native-toast-message';
 
 export default function AccountsScreen() {
   const modalizeRef = useRef<Modalize>(null);
@@ -158,13 +159,33 @@ export default function AccountsScreen() {
         includeInTotal={includeInTotal}
         setIncludeInTotal={setIncludeInTotal}
         onClose={() => setSelectedAccount(null)}
-        onEdit={() => {
-          // TODO: implementar navegação para edição
+        onEdit={async (balanceInput?: string) => {
+          if (!selectedAccount) return;
+          setLoading(true);
+          const res = await import('@/src/services/data').then(m => m.default.updateAccount(
+            selectedAccount.id,
+            {
+              balance: Number(balanceInput ?? selectedAccount.balance),
+              includeInTotal,
+              name: selectedAccount.name,
+              type: selectedAccount.type,
+              color: selectedAccount.color,
+              icon: selectedAccount.icon
+            }
+          ));
+          await fetchAccounts();
+          setLoading(false);
           accountOptionsModalRef.current?.close();
+          Toast.show({ type: res.error ? 'error' : 'success', text1: typeof res.error === 'string' ? res.error : (typeof res.message === 'string' ? res.message : 'Conta editada!') });
         }}
-        onDelete={() => {
-          // TODO: implementar exclusão
+        onDelete={async () => {
+          if (!selectedAccount) return;
+          setLoading(true);
+          const res = await import('@/src/services/data').then(m => m.default.deleteAccount(selectedAccount.id));
+          await fetchAccounts();
+          setLoading(false);
           accountOptionsModalRef.current?.close();
+          Toast.show({ type: res.error ? 'error' : 'success', text1: typeof res.error === 'string' ? res.error : (typeof res.message === 'string' ? res.message : 'Conta excluída!') });
         }}
       />
     </View>
