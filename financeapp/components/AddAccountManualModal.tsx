@@ -1,5 +1,5 @@
 import React, { useState, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import { theme } from '@/theme';
 import { ChevronRight } from 'lucide-react-native';
@@ -18,7 +18,7 @@ export const AddAccountManualModal = forwardRef<AddAccountManualModalRef, { onAc
   const iconSelectorRef = useRef<AccountIconSelectorModalRef>(null);
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
-  const [icon, setIcon] = useState<AccountIconOption['key']>('wallet');
+  const [icon, setIcon] = useState<AccountIconOption>(ICONS[0]);
 
   useImperativeHandle(ref, () => ({
     open: () => modalRef.current?.open(),
@@ -40,18 +40,24 @@ export const AddAccountManualModal = forwardRef<AddAccountManualModalRef, { onAc
       return;
     }
     try {
-      const res = await api.post('/accounts', {
-        name,
-        type: 'checking',
-        balance: Number(balance),
-        icon,
-      }, token);
+      // O backend espera apenas string/number para o campo icon, não um objeto inteiro
+      const iconToSend = icon?.key || icon?.emoji || '';
+      const res = await api.post(
+        '/accounts',
+        {
+          name,
+          type: 'checking',
+          balance: Number(balance),
+          icon: iconToSend,
+        },
+        token
+      );
       if (!res.error) {
         props.onAccountCreated?.();
         modalRef.current?.close();
         setName('');
         setBalance('');
-        setIcon('wallet');
+        setIcon(ICONS[0]);
       } else {
         alert('Erro ao cadastrar conta: ' + res.error);
       }
@@ -77,11 +83,13 @@ export const AddAccountManualModal = forwardRef<AddAccountManualModalRef, { onAc
           activeOpacity={0.7}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            {icon ? (
-              <Text style={{ fontSize: 22, marginRight: 8 }}>{ICONS.find((i: AccountIconOption) => i.key === icon)?.emoji}</Text>
-            ) : null}
+            {icon?.image ? (
+              <Image source={icon.image} style={{ width: 22, height: 22, marginRight: 8 }} />
+            ) : (
+              <Text style={{ fontSize: 22, marginRight: 8 }}>{icon?.emoji}</Text>
+            )}
             <Text style={{ color: icon ? theme.colors.text : theme.colors.textSecondary, fontSize: 16 }}>
-              {icon ? ICONS.find((i: AccountIconOption) => i.key === icon)?.label : 'Selecione o ícone da conta'}
+              {icon?.label || 'Selecione o ícone da conta'}
             </Text>
           </View>
           <ChevronRight size={22} color={theme.colors.primary} />
@@ -115,7 +123,7 @@ export const AddAccountManualModal = forwardRef<AddAccountManualModalRef, { onAc
       </Modalize>
       <AccountIconSelectorModal
         ref={iconSelectorRef}
-        onSelect={iconOption => setIcon(iconOption.key)}
+        onSelect={iconOption => setIcon({ ...iconOption, image: iconOption.image ? { ...iconOption.image } : undefined })}
       />
     </>
   );

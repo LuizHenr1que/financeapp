@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import { theme } from '@/theme';
 
@@ -17,17 +17,14 @@ export type AccountIconOption = {
 
 export const ICONS: AccountIconOption[] = [
   { key: 'wallet', label: 'Carteira', emoji: '👛' },
-  { key: 'mastercard', label: 'Mastercard', emoji: '💳' },
-  { key: 'visa', label: 'Visa', emoji: '💳' },
-  { key: 'hipercard', label: 'Hipercard', emoji: '💳' },
-  { key: 'elo', label: 'Elo', emoji: '💳' },
-  { key: 'amex', label: 'Amex', emoji: '💳' },
-  { key: 'bb', label: 'Banco do Brasil', emoji: '🏦' },
-  { key: 'itau', label: 'Itaú', emoji: '🏦' },
-  { key: 'bradesco', label: 'Bradesco', emoji: '🏦' },
-  { key: 'bradescard', label: 'Bradescard', emoji: '🏦' },
-  { key: 'santander', label: 'Santander', emoji: '🏦' },
-  { key: 'caixa', label: 'Caixa', emoji: '🏦' },
+  { key: 'Cartao', label: 'Visa', emoji: '💳' },
+{ key: 'c6', label: 'C6 Bank', image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-c6.png' } },
+  { key: 'bb', label: 'Banco do Brasil',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-bb.png' } },
+  { key: 'itau', label: 'Itaú',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-itau.png' } },
+  { key: 'mercadopago', label: 'Mercado Pago',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-mp.png' } },
+  { key: 'santander', label: 'Santander',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-santander.png' } },
+  { key: 'caixa', label: 'Caixa',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-caixa.png' } },
+  { key: 'c6', label: 'C6 Bank', image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-c6.png' } },
 ];
 
 interface Props {
@@ -62,7 +59,15 @@ export const AccountIconSelectorModal = forwardRef<AccountIconSelectorModalRef, 
             activeOpacity={0.7}
           >
             <View style={styles.iconCircle}>
-              <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
+              {item.image ? (
+                <Image
+                  source={item.image}
+                  style={{ width: 32, height: 32 }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
+              )}
             </View>
             <Text style={styles.iconLabel}>{item.label}</Text>
           </TouchableOpacity>

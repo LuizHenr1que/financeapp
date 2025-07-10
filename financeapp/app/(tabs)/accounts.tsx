@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { theme } from '@/theme';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -9,9 +9,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Modalize } from 'react-native-modalize';
 import { AddCardMethodOptions } from '@/components/AddCardMethodOptions';
 import { AddAccountManualModal, AddAccountManualModalRef } from '@/components/AddAccountManualModal';
+import { AccountOptionsModal, AccountOptionsModalRef } from '@/components/AccountOptionsModal';
 import api from '@/src/services/api';
 import authService from '@/src/services/auth';
 import { useAuth } from '@/context/AuthContext';
+import { ICONS } from '@/components/AccountIconSelectorModal';
 
 export default function AccountsScreen() {
   const modalizeRef = useRef<Modalize>(null);
@@ -20,6 +22,10 @@ export default function AccountsScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const [accountOptionsModalVisible, setAccountOptionsModalVisible] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [includeInTotal, setIncludeInTotal] = useState(true);
+  const accountOptionsModalRef = useRef<AccountOptionsModalRef>(null);
 
   const fetchAccounts = async () => {
     const token = await authService.getToken();
@@ -75,18 +81,41 @@ export default function AccountsScreen() {
           accounts.map(account => (
             <Card key={account.id} style={styles.accountCardCustom}>
               <TouchableOpacity
-                disabled={!selectMode}
+                disabled={selectMode}
                 onPress={() => {
                   if (selectMode) {
                     router.replace({ pathname: '/cards', params: { selectedAccount: account.name } });
+                  } else {
+                    setSelectedAccount(account);
+                    setIncludeInTotal(account.includeInTotal !== false); // default true
+                    setTimeout(() => accountOptionsModalRef.current?.open(), 10);
                   }
                 }}
                 style={{ flex: 1 }}
-                activeOpacity={selectMode ? 0.7 : 1}
+                activeOpacity={0.7}
               >
                 <View style={styles.cardTopRow}>
                   <View style={styles.circleIcon}>
-                    <CreditCard size={20} color={theme.colors.primary} />
+                    {(() => {
+                      const iconData = ICONS.find(i => i.key === account.icon || i.label === account.icon);
+                      if (iconData?.image) {
+                        return (
+                          <Image
+                            source={iconData.image}
+                            style={{ width: 25, height: 25 }}
+                            resizeMode="contain"
+                          />
+                        );
+                      } else if (iconData?.emoji) {
+                        return (
+                          <Text style={{ fontSize: 25 }}>{iconData.emoji}</Text>
+                        );
+                      } else {
+                        return (
+                          <Text style={{ fontSize: 25 }}>💳</Text>
+                        );
+                      }
+                    })()}
                   </View>
                   <Text style={styles.accountNameCustom}>{account.name}</Text>
                   <View style={styles.saldoContainer}>
@@ -123,6 +152,21 @@ export default function AccountsScreen() {
         />
       </Modalize>
       <AddAccountManualModal ref={manualModalRef} onAccountCreated={fetchAccounts} />
+      <AccountOptionsModal
+        ref={accountOptionsModalRef}
+        selectedAccount={selectedAccount}
+        includeInTotal={includeInTotal}
+        setIncludeInTotal={setIncludeInTotal}
+        onClose={() => setSelectedAccount(null)}
+        onEdit={() => {
+          // TODO: implementar navegação para edição
+          accountOptionsModalRef.current?.close();
+        }}
+        onDelete={() => {
+          // TODO: implementar exclusão
+          accountOptionsModalRef.current?.close();
+        }}
+      />
     </View>
   );
 }
@@ -175,7 +219,7 @@ const styles = StyleSheet.create({
   },
   accountCardCustom: {
     marginBottom: theme.spacing.lg,
-    paddingVertical: theme.spacing.md, 
+    paddingVertical: theme.spacing.sm, 
     paddingHorizontal: theme.spacing.lg, 
     backgroundColor: theme.colors.surface,
   },
@@ -190,15 +234,17 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.large,
     fontWeight: 'bold',
     color: theme.colors.text,
+    paddingLeft: theme.spacing.md,
   },
   circleIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.primaryLight,
+     width: 40,
+    height: 40,
+    borderRadius: 30,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   saldoContainer: {
     alignItems: 'flex-end',
@@ -254,5 +300,83 @@ const styles = StyleSheet.create({
     color: theme.colors.title,
     fontWeight: 'bold',
     fontSize: theme.typography.medium,
+  },
+  // Estilos para o modal de opções da conta, igual ao AddAccountManualModal
+  optionsModalContainer: {
+    padding: 24,
+  },
+  optionsTitle: {
+    fontSize: 20,
+    color: theme.colors.text,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    textAlign: 'left',
+  },
+  optionsCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+  },
+  optionsCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: theme.colors.background,
+  },
+  optionsCheckboxChecked: {
+    backgroundColor: theme.colors.primary,
+  },
+  optionsCheckboxInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.title,
+  },
+  optionsCheckboxLabel: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  optionsSaldo: {
+    color: theme.colors.textSecondary,
+    fontSize: 16,
+    marginBottom: 32,
+    textAlign: 'left',
+  },
+  optionsSaldoBold: {
+    color: theme.colors.text,
+    fontWeight: 'bold',
+  },
+  optionsButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+  },
+  optionsButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    flex: 1,
+    marginTop: 8,
+  },
+  optionsButtonCancel: {
+    backgroundColor: theme.colors.border,
+  },
+  optionsButtonText: {
+    color: theme.colors.surface,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  optionsButtonTextCancel: {
+    color: theme.colors.text,
   },
 });
