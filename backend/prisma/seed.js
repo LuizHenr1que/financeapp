@@ -131,29 +131,6 @@ async function main() {
 
     console.log('✅ Categorias criadas:', categories.count);
 
-    // Criar contas padrão
-    const checkingAccount = await prisma.account.create({
-      data: {
-        name: 'Conta Corrente',
-        type: 'checking',
-        balance: 2500.00,
-        color: '#2196F3',
-        icon: '🏦',
-        userId: user.id
-      }
-    });
-
-    const savingsAccount = await prisma.account.create({
-      data: {
-        name: 'Poupança',
-        type: 'savings',
-        balance: 10000.00,
-        color: '#4CAF50',
-        icon: '🐷',
-        userId: user.id
-      }
-    });
-
     // Criar cartões de exemplo
     await prisma.card.createMany({
       data: [
@@ -242,6 +219,34 @@ async function main() {
     });
 
     console.log('✅ Usuário premium criado:', premiumUser.email);
+
+    // Criar conta 'Carteira' para o usuário 
+    await prisma.account.create({
+      data: {
+        name: 'Carteira',
+        type: 'wallet',
+        color: '#FFD700',
+        icon: 'Wallet',
+        balance: 0,
+        includeInTotal: true,
+        userId: user.id,
+      }
+    });
+
+    // Criar conta 'Carteira' para o usuário premium
+    await prisma.account.create({
+      data: {
+        name: 'Carteira',
+        type: 'wallet',
+        color: '#FFD700',
+        icon: 'Wallet',
+        balance: 0,
+        includeInTotal: true,
+        userId: premiumUser.id,
+      }
+    });
+
+    console.log('✅ Contas criadas');
 
     console.log('🎉 Seed concluído com sucesso!');
     console.log('');

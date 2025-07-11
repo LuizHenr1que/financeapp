@@ -23,7 +23,7 @@ class AccountController {
     try {
       const userId = req.user.id;
       const { name, type, color, icon, balance, includeInTotal } = req.body;
-      // Cria a conta
+      // Cria a conta solicitada
       const account = await prisma.account.create({
         data: {
           name,
@@ -35,40 +35,33 @@ class AccountController {
           userId,
         },
       });
-      // Cria o cartão padrão vinculado à conta
-      await prisma.card.create({
-        data: {
-          name: 'Cartão',
-          lastFour: '0000',
-          type: 'credit',
-          brand: 'default',
-          color: color || null,
-          limit: 0,
-          userId,
-        },
-      });
-      // Cria categorias principais para a conta
-      const mainCategories = [
-        { name: 'Alimentação', type: 'expense', color: '#F44336', icon: '🍽️' },
-        { name: 'Transporte', type: 'expense', color: '#FF5722', icon: '🚗' },
-        { name: 'Moradia', type: 'expense', color: '#795548', icon: '🏠' },
-        { name: 'Saúde', type: 'expense', color: '#E91E63', icon: '🏥' },
-        { name: 'Educação', type: 'expense', color: '#3F51B5', icon: '📚' },
-        { name: 'Lazer', type: 'expense', color: '#9E9E9E', icon: '🎉' },
-        { name: 'Compras', type: 'expense', color: '#607D8B', icon: '🛒' },
-        { name: 'Serviços', type: 'expense', color: '#00BCD4', icon: '🔧' },
-        { name: 'Salário', type: 'income', color: '#4CAF50', icon: '💰' },
-        { name: 'Freelance', type: 'income', color: '#2196F3', icon: '💻' },
-        { name: 'Investimentos', type: 'income', color: '#FF9800', icon: '📈' },
-        { name: 'Vendas', type: 'income', color: '#9C27B0', icon: '🛍️' },
-      ];
-      await prisma.category.createMany({
-        data: mainCategories.map(cat => ({
-          ...cat,
-          userId,
-          accountId: account.id
-        }))
-      });
+
+      // Cria categorias padrão apenas se não existirem para o usuário
+      const existingCategories = await prisma.category.findFirst({ where: { userId } });
+      if (!existingCategories) {
+        const mainCategories = [
+          { name: 'Alimentação', type: 'expense', color: '#F44336', icon: 'Utensils' },
+          { name: 'Transporte', type: 'expense', color: '#FF5722', icon: 'Car' },
+          { name: 'Moradia', type: 'expense', color: '#795548', icon: 'Home' },
+          { name: 'Saúde', type: 'expense', color: '#E91E63', icon: 'Heart' },
+          { name: 'Educação', type: 'expense', color: '#3F51B5', icon: 'Book' },
+          { name: 'Lazer', type: 'expense', color: '#9E9E9E', icon: 'Gift' },
+          { name: 'Compras', type: 'expense', color: '#607D8B', icon: 'ShoppingCart' },
+          { name: 'Serviços', type: 'expense', color: '#00BCD4', icon: 'Briefcase' },
+          { name: 'Salário', type: 'income', color: '#4CAF50', icon: 'DollarSign' },
+          { name: 'Freelance', type: 'income', color: '#2196F3', icon: 'Laptop' },
+          { name: 'Investimentos', type: 'income', color: '#FF9800', icon: 'PiggyBank' },
+          { name: 'Vendas', type: 'income', color: '#9C27B0', icon: 'ShoppingBag' },
+        ];
+        await prisma.category.createMany({
+          data: mainCategories.map(cat => ({
+            ...cat,
+            userId,
+            accountId: account.id
+          }))
+        });
+      }
+
       res.status(201).json({ account, message: 'Conta cadastrada com sucesso!' });
     } catch (error) {
       console.error('Erro ao criar conta:', error);

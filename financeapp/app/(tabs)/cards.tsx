@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Plus, Edit3, Trash2, CreditCard, Eye, EyeOff } from 'lucide-react-native';
+import { Plus, Edit3, Trash2, CreditCard } from 'lucide-react-native';
 import { theme } from '@/theme';
 import { useData } from '@/context/DataContext';
 import { Card } from '@/components/Card';
@@ -344,23 +344,6 @@ export default function CardsScreen() {
             );
           })
         )}
-        {/* <View style={styles.cardVisualContainer}>
-          <CardVisual
-            variant="visa"
-            backgroundColor="#232323"
-            name="Sunny Aveiro"
-            number="**** **** **** 1690"
-            exp="01/22"
-          />
-
-          <CardVisual
-            variant="mastercard"
-            backgroundColor="#6a5af9"
-            name="Sunny Aveiro"
-            number="**** **** **** 1690"
-            exp="01/22"
-          />
-        </View> */}
       </ScrollView>
       {/* Modal de escolha do método de cadastro do cartão */}
       <AddCardMethodModal

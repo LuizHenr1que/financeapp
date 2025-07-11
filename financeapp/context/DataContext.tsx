@@ -29,29 +29,11 @@ interface DataContextType {
 }
 
 const initialData: AppData = {
-  categories: [
-    { id: '1', name: 'Alimentação', color: '#ff6b6b', icon: 'utensils', type: 'expense' },
-    { id: '2', name: 'Transporte', color: '#4ecdc4', icon: 'car', type: 'expense' },
-    { id: '3', name: 'Salário', color: '#45b7d1', icon: 'dollar-sign', type: 'income' },
-    { id: '4', name: 'Lazer', color: '#96ceb4', icon: 'gamepad', type: 'expense' },
-  ],
-  cards: [
-    { id: '1', name: 'Cartão Principal', limit: 2000, currentSpending: 850, closingDay: 15, dueDay: 10, color: '#1de9b6' },
-    { id: '2', name: 'Cartão Extra', limit: 1000, currentSpending: 230, closingDay: 20, dueDay: 15, color: '#0f2e2a' },
-  ],
-  accounts: [
-    { id: '1', name: 'Conta Corrente', type: 'checking', balance: 2500, color: '#28A745', icon: 'Wallet' },
-    { id: '2', name: 'Poupança', type: 'savings', balance: 10000, color: '#007AFF', icon: 'PiggyBank' },
-  ],
-  transactions: [
-    { id: '1', type: 'expense', amount: 120, date: '2025-01-15', categoryId: '1', paymentMethod: 'card', cardId: '1', description: 'Supermercado' },
-    { id: '2', type: 'income', amount: 3500, date: '2025-01-01', categoryId: '3', paymentMethod: 'pix', description: 'Salário Janeiro' },
-    { id: '3', type: 'expense', amount: 45, date: '2025-01-14', categoryId: '2', paymentMethod: 'pix', description: 'Uber' },
-  ],
-  goals: [
-    { id: '1', name: 'Viagem de Férias', targetAmount: 3000, currentAmount: 1200, deadline: '2025-12-31', color: '#ff6b6b' },
-    { id: '2', name: 'Reserva de Emergência', targetAmount: 10000, currentAmount: 6500, deadline: '2025-12-31', color: '#4ecdc4' },
-  ],
+  categories: [],
+  cards: [],
+  accounts: [],
+  transactions: [],
+  goals: [],
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -266,7 +248,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           type: a.type,
           balance: a.balance,
           color: a.color || '#28A745',
-          icon: a.icon || 'Wallet'
+          icon: a.icon || 'Wallet',
+          includeInTotal: typeof a.includeInTotal === 'boolean' ? a.includeInTotal : true // valor padrão true
         }));
 
         setData(prevData => ({
