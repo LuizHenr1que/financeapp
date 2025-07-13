@@ -4,6 +4,7 @@
   "description": "Backend para aplicativo de finanças pessoais",
   "main": "src/server.js",
   "scripts": {
+    "migrate:deploy": "prisma migrate deploy",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "build": "prisma generate",
