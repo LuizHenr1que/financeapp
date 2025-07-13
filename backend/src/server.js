@@ -119,6 +119,7 @@ app.use('*', (req, res) => {
     error: 'Rota não encontrada'
   });
 });
+console.log('🔎 DATABASE_URL:', process.env.DATABASE_URL);
 
 // Função para iniciar o servidor
 async function startServer() {

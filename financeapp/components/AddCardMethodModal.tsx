@@ -1,12 +1,14 @@
 import React, { forwardRef, useState, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import { Card } from './Card';
 import { theme } from '@/theme';
 import { ChevronRight } from 'lucide-react-native';
-import { View as RNView } from 'react-native';
+import { View as RNView, Image } from 'react-native';
 import { Input } from './Input';
 import { CreditCard } from 'lucide-react-native';
+import { AccountIconSelectorModal, AccountIconSelectorModalRef, AccountIconOption } from './AccountIconSelectorModal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { AddCardMethodOptions } from './AddCardMethodOptions';
 
@@ -48,8 +50,8 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
       { label: 'Cartão Roxo', icon: <CreditCard size={24} color={'#8e24aa'} /> },
       { label: 'Cartão Laranja', icon: <CreditCard size={24} color={'#fb8c00'} /> },
     ];
-    const [selectedCardIcon, setSelectedCardIcon] = useState('');
-    const selectCardIconModalRef = useRef<Modalize>(null);
+    const [selectedCardIcon, setSelectedCardIcon] = useState<{ label: string; icon: React.ReactNode } | null>(null);
+    const selectCardIconModalRef = useRef<AccountIconSelectorModalRef>(null);
     const handleCancel = () => {
       setStep('choose');
       setForm({ account: '', name: '', limit: '', closingDay: '', dueDay: '' });
@@ -71,20 +73,18 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
     const params = useLocalSearchParams();
     // Preencher o campo ao retornar da tela de contas
     React.useEffect(() => {
-      // Se veio por parâmetro (web/deep link)
       if (params.selectedAccount) {
         setForm(f => ({ ...f, account: String(params.selectedAccount) }));
         setStep('manual');
         modalizeRef.current?.open();
       }
-      // Se veio por variável global (navegação interna)
-      if (typeof window !== 'undefined' && window.selectedAccountTemp) {
-        setForm(f => ({ ...f, account: String(window.selectedAccountTemp) }));
-        setStep('manual');
-        modalizeRef.current?.open();
-        window.selectedAccountTemp = undefined;
-      }
     }, [params.selectedAccount]);
+
+    useFocusEffect(
+      React.useCallback(() => {
+        // Nenhuma lógica de window, apenas params.selectedAccount já cobre o caso
+      }, [])
+    );
     React.useImperativeHandle(ref, () => ({
       open: () => { setStep('choose'); modalizeRef.current?.open(); },
       close: () => { setStep('choose'); modalizeRef.current?.close(); },
@@ -120,8 +120,7 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
               <TouchableOpacity
                 style={[styles.selectInput, { marginBottom: 16 }]}
                 onPress={() => {
-                  // Navega para a tela de contas e espera o retorno, passando returnTo
-                  router.push({ pathname: '/accounts', params: { selectMode: 'true', returnTo: '/add' } });
+                  router.push({ pathname: '/accounts', params: { selectMode: 'true' } });
                 }}
                 activeOpacity={0.7}
               >
@@ -143,11 +142,9 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
                 activeOpacity={0.7}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  {selectedCardIcon
-                    ? cardIcons.find(i => i.label === selectedCardIcon)?.icon
-                    : null}
+                  {selectedCardIcon?.icon}
                   <Text style={{ color: selectedCardIcon ? theme.colors.text : theme.colors.textSecondary, fontSize: 16, marginLeft: selectedCardIcon ? 8 : 0 }}>
-                    {selectedCardIcon ? selectedCardIcon : 'Selecione ícone do cartão'}
+                    {selectedCardIcon ? selectedCardIcon.label : 'Selecione ícone do cartão'}
                   </Text>
                 </View>
                 <ChevronRight size={22} color={theme.colors.primary} />
@@ -233,29 +230,21 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
           ))}
         </Modalize>
         {/* Modal de seleção de ícone do cartão */}
-        <Modalize
+        <AccountIconSelectorModal
           ref={selectCardIconModalRef}
-          modalHeight={400}
-          handleStyle={{ backgroundColor: theme.colors.border }}
-          modalStyle={{ backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}
-        >
-          <Text style={styles.title}>Selecionar ícone do cartão</Text>
-          {cardIcons.map(icon => (
-            <TouchableOpacity
-              key={icon.label}
-              style={styles.accountOption}
-              onPress={() => {
-                setSelectedCardIcon(icon.label);
-                selectCardIconModalRef.current?.close();
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {icon.icon}
-                <Text style={{ marginLeft: 12, fontSize: 16, color: theme.colors.text }}>{icon.label}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </Modalize>
+          onSelect={icon => {
+            let iconNode: React.ReactNode = null;
+            if (icon.image) {
+              iconNode = <Image source={icon.image} style={{ width: 24, height: 24, marginRight: 8 }} resizeMode="contain" />;
+            } else if (icon.emoji) {
+              iconNode = <Text style={{ fontSize: 24, marginRight: 8 }}>{icon.emoji}</Text>;
+            } else {
+              iconNode = <CreditCard size={24} color={theme.colors.primary} style={{ marginRight: 8 }} />;
+            }
+            setSelectedCardIcon({ label: icon.label, icon: iconNode });
+          }}
+          title="Selecionar ícone"
+        />
         {/* Modal de seleção de Fecha dia */}
         <Modalize
           ref={selectClosingDayModalRef}

@@ -30,13 +30,14 @@ export const AddAccountForm = () => {
             style={{ width: 32, height: 32, marginRight: 12 }}
           />
         ) : (
-          <Text style={{ fontSize: 32, marginRight: 12 }}>{selectedIcon?.emoji || '🏦'}</Text>
+          <Text style={{ fontSize: 32, marginRight: 12 }}>{selectedIcon?.emoji}</Text>
         )}
         <Text style={{ fontSize: 16, color: '#333' }}>{selectedIcon?.label || 'Selecionar banco'}</Text>
       </TouchableOpacity>
       <AccountIconSelectorModal
         ref={modalRef}
         onSelect={icon => setSelectedIcon({ ...icon, image: icon.image ? { ...icon.image } : undefined })}
+        title="Selecionar ícone"
       />
     </View>
   );

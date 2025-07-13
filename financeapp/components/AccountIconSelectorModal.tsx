@@ -1,5 +1,5 @@
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import { theme } from '@/theme';
 
@@ -29,15 +29,47 @@ export const ICONS: AccountIconOption[] = [
 
 interface Props {
   onSelect: (icon: AccountIconOption) => void;
+  title?: string;
 }
 
-export const AccountIconSelectorModal = forwardRef<AccountIconSelectorModalRef, Props>(({ onSelect }, ref) => {
+const AccountIconSelectorModalInner = (
+  { onSelect, title = 'Selecionar banco' }: Props,
+  ref: React.Ref<AccountIconSelectorModalRef>
+) => {
   const modalRef = useRef<Modalize>(null);
+  const [imageCache, setImageCache] = useState<{ [key: string]: string | undefined }>({});
+
+  // Função para baixar e salvar imagem no cache
+  const fetchImage = async (uri: string, key: string) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageCache(prev => ({ ...prev, [key]: reader.result as string }));
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      setImageCache(prev => ({ ...prev, [key]: undefined }));
+    }
+  };
+
+  // Pré-carrega imagens ao montar o componente
+  useEffect(() => {
+    ICONS.forEach(icon => {
+      if (icon.image && icon.image.uri && !imageCache[icon.key]) {
+        fetchImage(icon.image.uri, icon.key);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useImperativeHandle(ref, () => ({
-    open: () => modalRef.current?.open(),
+    open: () => {
+      modalRef.current?.open();
+    },
     close: () => modalRef.current?.close(),
-  }));
+  }), []);
 
   return (
     <Modalize
@@ -59,12 +91,16 @@ export const AccountIconSelectorModal = forwardRef<AccountIconSelectorModalRef, 
             activeOpacity={0.7}
           >
             <View style={styles.iconCircle}>
-              {item.image ? (
-                <Image
-                  source={item.image}
-                  style={{ width: 32, height: 32 }}
-                  resizeMode="contain"
-                />
+              {item.image && item.image.uri ? (
+                imageCache[item.key] ? (
+                  <Image
+                    source={{ uri: imageCache[item.key] }}
+                    style={{ width: 32, height: 32 }}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <ActivityIndicator size="small" color={theme.colors.text} />
+                )
               ) : (
                 <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
               )}
@@ -75,12 +111,12 @@ export const AccountIconSelectorModal = forwardRef<AccountIconSelectorModalRef, 
         contentContainerStyle: { gap: 16, paddingTop: 16 },
         columnWrapperStyle: { justifyContent: 'space-between', marginBottom: 24 },
         ListHeaderComponent: () => (
-          <Text style={styles.title}>Selecionar banco</Text>
+          <Text style={styles.title}>{title}</Text>
         ),
       }}
     />
   );
-});
+};
 
 const styles = StyleSheet.create({
   title: {
@@ -111,3 +147,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export const AccountIconSelectorModal = forwardRef(AccountIconSelectorModalInner);

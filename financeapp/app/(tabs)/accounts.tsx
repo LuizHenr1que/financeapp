@@ -82,7 +82,6 @@ export default function AccountsScreen() {
           accounts.map(account => (
             <Card key={account.id} style={styles.accountCardCustom}>
               <TouchableOpacity
-                disabled={selectMode}
                 onPress={() => {
                   if (selectMode) {
                     router.replace({ pathname: '/cards', params: { selectedAccount: account.name } });
