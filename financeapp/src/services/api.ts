@@ -1,21 +1,20 @@
 import { Platform } from 'react-native';
 
-// Configuração base da API
-// Para testar com dispositivo físico, altere para o IP da sua máquina
-// Ex: 'http://192.168.1.100:3000/api'
+// Usa variável de ambiente do Expo (funciona com .env)
+const prodUrl = process.env.EXPO_PUBLIC_API_URL;
+
+// Define a URL base dependendo do ambiente
 const getApiBaseUrl = () => {
   if (__DEV__) {
-    // Para desenvolvimento
+    // Durante desenvolvimento
     if (Platform.OS === 'android') {
-      // Android emulator
-      return 'http://10.0.2.2:3000/api';
+      return 'http://10.0.2.2:3000/api'; // Android Emulator
     } else {
-      // iOS simulator
-      return 'http://localhost:3000/api';
+      return 'http://localhost:3000/api'; // iOS Simulator
     }
   } else {
-    // Para produção
-    return 'https://sua-api-em-producao.com/api';
+    // Em produção, pega da variável do .env
+    return prodUrl || 'https://financeapp-as0q.onrender.com/api';
   }
 };
 
@@ -41,7 +40,7 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
-      
+
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
