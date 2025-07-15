@@ -16,6 +16,8 @@ const getApiBaseUrl = () => {
     // Em produção, pega da variável do .env
     return prodUrl || 'https://financeapp-as0q.onrender.com/api';
   }
+
+  //  return prodUrl || 'https://financeapp-as0q.onrender.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

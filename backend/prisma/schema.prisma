@@ -133,11 +133,11 @@ model Goal {
 model Card {
   id         String   @id @default(cuid())
   name       String
-  lastFour   String   // últimos 4 dígitos
   type       String   // "credit", "debit"
-  brand      String   // "visa", "mastercard", etc.
-  color      String?
+  icon       String?  // nome do ícone
   limit      Decimal?
+  closingDay Int?     // dia de fechamento
+  dueDay     Int?     // dia de vencimento
   userId     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

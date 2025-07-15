@@ -18,19 +18,43 @@ export type AccountIconOption = {
 export const ICONS: AccountIconOption[] = [
   { key: 'wallet', label: 'Carteira', emoji: '👛' },
   { key: 'Cartao', label: 'Visa', emoji: '💳' },
-{ key: 'c6', label: 'C6 Bank', image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-c6.png' } },
-  { key: 'bb', label: 'Banco do Brasil',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-bb.png' } },
-  { key: 'itau', label: 'Itaú',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-itau.png' } },
-  { key: 'mercadopago', label: 'Mercado Pago',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-mp.png' } },
-  { key: 'santander', label: 'Santander',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-santander.png' } },
-  { key: 'caixa', label: 'Caixa',  image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-caixa.png' } },
-  { key: 'c6', label: 'C6 Bank', image: { uri: 'http://10.0.2.2:3000/public/imagens/logo-c6.png' } },
+  { key: 'c6', label: 'C6 Bank', image: { uri: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api','')}/public/imagens/logo-c6.png` } },
+  { key: 'bb', label: 'Banco do Brasil',  image: { uri: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api','')}/public/imagens/logo-bb.png` } },
+  { key: 'itau', label: 'Itaú',  image: { uri: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api','')}/public/imagens/logo-itau.png` } },
+  { key: 'mercadopago', label: 'Mercado Pago',  image: { uri: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api','')}/public/imagens/logo-mp.png` } },
+  { key: 'santander', label: 'Santander',  image: { uri: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api','')}/public/imagens/logo-santander.png` } },
+  { key: 'caixa', label: 'Caixa',  image: { uri: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api','')}/public/imagens/logo-caixa.png` } },
 ];
 
 interface Props {
   onSelect: (icon: AccountIconOption) => void;
   title?: string;
 }
+
+// Cache global de imagens para uso em outros componentes
+export const globalImageCache: { [key: string]: string | undefined } = {};
+
+// Função para pré-carregar imagens e popular o cache global
+export const preloadAccountIcons = async () => {
+  for (const icon of ICONS) {
+    if (icon.image && icon.image.uri && !globalImageCache[icon.key]) {
+      try {
+        const response = await fetch(icon.image.uri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        await new Promise<void>((resolve) => {
+          reader.onloadend = () => {
+            globalImageCache[icon.key] = reader.result as string;
+            resolve();
+          };
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        globalImageCache[icon.key] = undefined;
+      }
+    }
+  }
+};
 
 const AccountIconSelectorModalInner = (
   { onSelect, title = 'Selecionar banco' }: Props,
@@ -39,7 +63,7 @@ const AccountIconSelectorModalInner = (
   const modalRef = useRef<Modalize>(null);
   const [imageCache, setImageCache] = useState<{ [key: string]: string | undefined }>({});
 
-  // Função para baixar e salvar imagem no cache
+  // Função para baixar e salvar imagem no cache local e global
   const fetchImage = async (uri: string, key: string) => {
     try {
       const response = await fetch(uri);
@@ -47,14 +71,16 @@ const AccountIconSelectorModalInner = (
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageCache(prev => ({ ...prev, [key]: reader.result as string }));
+        globalImageCache[key] = reader.result as string;
       };
       reader.readAsDataURL(blob);
     } catch (error) {
       setImageCache(prev => ({ ...prev, [key]: undefined }));
+      globalImageCache[key] = undefined;
     }
   };
 
-  // Pré-carrega imagens ao montar o componente
+  // Pré-carrega imagens ao montar o componente (e salva no cache global)
   useEffect(() => {
     ICONS.forEach(icon => {
       if (icon.image && icon.image.uri && !imageCache[icon.key]) {

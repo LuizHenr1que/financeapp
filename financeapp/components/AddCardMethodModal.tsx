@@ -198,7 +198,32 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
                 <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary, borderWidth: 1 }]} onPress={handleCancel}>
                   <Text style={[styles.actionBtnText, { color: theme.colors.primary }]}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={() => { onManualPress(); handleCancel(); }}>
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={() => {
+                  // Chama a função de salvar cartão no backend com token de autenticação
+                  import('../src/services/auth').then(({ default: authService }) => {
+                    authService.getToken().then(token => {
+                      if (!token) {
+                        alert('Usuário não autenticado. Faça login novamente.');
+                        return;
+                      }
+                      import('../src/services/card').then(({ default: CardService }) => {
+                        // Campos obrigatórios para o backend: name, type, icon, limit, closingDay, dueDay
+                        const payload = {
+                          name: form.name,
+                          type: 'credit', // valor padrão
+                          icon: selectedCardIcon?.label || '',
+                          limit: form.limit,
+                          closingDay: selectedClosingDay ? Number(selectedClosingDay) : null,
+                          dueDay: selectedDueDay ? Number(selectedDueDay) : null,
+                        };
+                        console.log('🟢 Enviando para backend (criar cartão):', payload);
+                        CardService.createCard(payload, token).then(() => {
+                          handleCancel(); // Fecha o modal após salvar
+                        });
+                      });
+                    });
+                  });
+                }}>
                   <Text style={[styles.actionBtnText, { color: theme.colors.surface }]}>Salvar</Text>
                 </TouchableOpacity>
               </View>

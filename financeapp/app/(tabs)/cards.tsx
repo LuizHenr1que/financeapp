@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { Plus, Edit3, Trash2, CreditCard } from 'lucide-react-native';
 import { theme } from '@/theme';
 import { useData } from '@/context/DataContext';
@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Header } from '@/components/Header';
 import { Card as CardType } from '@/types';
+import { ICONS, globalImageCache, preloadAccountIcons } from '@/components/AccountIconSelectorModal';
 import { AddCardMethodModal } from '@/components/AddCardMethodModal';
 import { Modalize } from 'react-native-modalize';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,9 +29,11 @@ export default function CardsScreen() {
     limit: '',
     closingDay: '',
     dueDay: '',
-    color: '#1de9b6',
+    icon: '',
   });
   const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [cardToRemove, setCardToRemove] = useState<CardType | null>(null);
+  const removeModalRef = useRef<Modalize>(null);
   const addCardModalRef = useRef<AddCardMethodModalRef>(null);
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -73,24 +76,27 @@ export default function CardsScreen() {
       limit: card.limit.toString(),
       closingDay: card.closingDay.toString(),
       dueDay: card.dueDay.toString(),
-      color: card.color,
+      icon: card.icon || '',
     });
     setIsEditing(true);
   };
 
-  const handleDelete = (cardId: string) => {
-    Alert.alert(
-      'Excluir Cartão',
-      'Tem certeza que deseja excluir este cartão?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Excluir', 
-          style: 'destructive',
-          onPress: () => deleteCard(cardId),
-        },
-      ]
-    );
+  const handleDelete = (card: CardType) => {
+    setCardToRemove(card);
+    setTimeout(() => removeModalRef.current?.open(), 100);
+  };
+
+  const confirmRemove = () => {
+    if (cardToRemove) {
+      deleteCard(cardToRemove.id);
+      removeModalRef.current?.close();
+      setTimeout(() => setCardToRemove(null), 300);
+    }
+  };
+
+  const cancelRemove = () => {
+    removeModalRef.current?.close();
+    setTimeout(() => setCardToRemove(null), 300);
   };
 
   const handleSave = async () => {
@@ -119,21 +125,21 @@ export default function CardsScreen() {
     }
 
     try {
-      const cardData = {
-        name: formData.name,
-        limit,
-        closingDay,
-        dueDay,
-        color: formData.color,
-        currentSpending: editingCard?.currentSpending || 0,
-      };
+    const cardData = {
+      name: formData.name,
+      limit,
+      closingDay,
+      dueDay,
+      icon: formData.icon,
+      currentSpending: editingCard?.currentSpending || 0,
+    };
 
-      if (editingCard) {
-        await updateCard(editingCard.id, cardData);
-      } else {
-        await addCard(cardData);
-      }
-      resetForm();
+    if (editingCard) {
+      await updateCard(editingCard.id, cardData);
+    } else {
+      await addCard(cardData);
+    }
+    resetForm();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível salvar o cartão');
     }
@@ -145,7 +151,7 @@ export default function CardsScreen() {
       limit: '',
       closingDay: '',
       dueDay: '',
-      color: '#1de9b6',
+      icon: '',
     });
     setEditingCard(null);
     setIsEditing(false);
@@ -196,20 +202,12 @@ export default function CardsScreen() {
               keyboardType="numeric"
             />
 
-            <Text style={styles.sectionTitle}>Cor do Cartão</Text>
-            <View style={styles.colorGrid}>
-              {colors.map(color => (
-                <TouchableOpacity
-                  key={color}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color },
-                    formData.color === color && styles.colorOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, color })}
-                />
-              ))}
-            </View>
+            <Input
+              label="Ícone do Cartão"
+              value={formData.icon}
+              onChangeText={(text) => setFormData({ ...formData, icon: text })}
+              placeholder="Ex: credit-card, visa, etc."
+            />
 
             <View style={styles.buttonRow}>
               <Button
@@ -230,6 +228,12 @@ export default function CardsScreen() {
     );
   }
 
+  // Log dos cartões exibidos
+  console.log('Cartões exibidos:', data.cards);
+  // Garante que o cache de imagens está carregado (executa uma vez)
+  React.useEffect(() => {
+    preloadAccountIcons();
+  }, []);
   return (
     <View style={styles.container}>
       <Header 
@@ -272,12 +276,33 @@ export default function CardsScreen() {
               <Card key={card.id} style={styles.cardItem}>
                 <View style={styles.cardHeader}>
                   <View style={styles.cardInfo}>
-                    <View
-                      style={[
-                        styles.cardColorBadge,
-                        { backgroundColor: card.color },
-                      ]}
-                    />
+                    {/* Exibir imagem do banco se houver no cache global, senão emoji, senão nome */}
+                    {(() => {
+                      const iconOption = ICONS.find(i => {
+                        const iconValue = (card.icon || '').toLowerCase().trim();
+                        return (
+                          i.key.toLowerCase() === iconValue ||
+                          i.label.toLowerCase() === iconValue
+                        );
+                      });
+                      if (iconOption && iconOption.image && globalImageCache[iconOption.key]) {
+                        return (
+                          <Image
+                            source={{ uri: globalImageCache[iconOption.key] }}
+                            style={{ width: 32, height: 32, marginRight: 8 }}
+                            resizeMode="contain"
+                          />
+                        );
+                      } else if (iconOption && iconOption.emoji) {
+                        return (
+                          <Text style={{ fontSize: 28, marginRight: 8 }}>{iconOption.emoji}</Text>
+                        );
+                      } else {
+                        return (
+                          <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>{card.icon}</Text>
+                        );
+                      }
+                    })()}
                     <Text style={styles.cardName}>{card.name}</Text>
                   </View>
                   <View style={styles.cardActions}>
@@ -288,7 +313,7 @@ export default function CardsScreen() {
                       <Edit3 size={16} color={theme.colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => handleDelete(card.id)}
+                      onPress={() => handleDelete(card)}
                       style={styles.actionButton}
                     >
                       <Trash2 size={16} color={theme.colors.error} />
@@ -357,6 +382,36 @@ export default function CardsScreen() {
           // Aqui você pode implementar a lógica do Open Finance futuramente
         }}
       />
+
+      {/* Modal de confirmação de remoção */}
+      <Modalize
+        ref={removeModalRef}
+        adjustToContentHeight
+        modalStyle={{ padding: 24, alignItems: 'center' }}
+      >
+        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 12, color: theme.colors.text }}>
+          Remover Cartão
+        </Text>
+        <Text style={{ fontSize: 16, color: theme.colors.textSecondary, marginBottom: 24, textAlign: 'center' }}>
+          Tem certeza que deseja remover o cartão{' '}
+          <Text style={{ fontWeight: 'bold', color: theme.colors.error }}>{cardToRemove?.name}</Text>?
+          Esta ação não poderá ser desfeita.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <Button
+            title="Cancelar"
+            variant="outline"
+            style={{ flex: 1, marginRight: 8 }}
+            onPress={cancelRemove}
+          />
+          <Button
+            title="Remover"
+            style={{ flex: 1, backgroundColor: theme.colors.error }}
+            textStyle={{ color: '#fff' }}
+            onPress={confirmRemove}
+          />
+        </View>
+      </Modalize>
     </View>
   );
 }

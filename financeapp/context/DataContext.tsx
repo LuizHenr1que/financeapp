@@ -193,20 +193,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (response.data?.cards) {
         console.log(`✅ ${response.data.cards.length} cartões carregados do backend`);
-        
-        // Mapear os cartões do backend para o formato local
-        const mappedCards: Card[] = response.data.cards.map(c => {
-          console.log('🎯 Mapeando cartão do backend:', c);
-          return {
-            id: c.id,
-            name: c.name,
-            limit: typeof c.limit === 'number' ? c.limit : 0,
-            currentSpending: 0, // Valor padrão (não vem do backend ainda)
-            closingDay: 5, // Valor padrão (não vem do backend ainda)
-            dueDay: 25, // Valor padrão (não vem do backend ainda)
-            color: c.color || '#007AFF'
-          };
-        });
+        // Mapear os cartões do backend para o formato local, usando os campos reais
+        const mappedCards: Card[] = response.data.cards.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          type: c.type ?? '',
+          icon: c.icon ?? '',
+          limit: typeof c.limit === 'number' ? c.limit : 0,
+          currentSpending: 0, // Valor padrão (não vem do backend ainda)
+          closingDay: Number(c.closingDay) || 1,
+          dueDay: Number(c.dueDay) || 1,
+        }));
 
         setData(prevData => ({
           ...prevData,

@@ -24,11 +24,12 @@ export interface Category {
 export interface Card {
   id: string;
   name: string;
+  type?: string; // opcional, caso queira usar
+  icon: string;
   limit: number;
   currentSpending: number;
   closingDay: number;
   dueDay: number;
-  color: string;
 }
 
 export interface Account {
