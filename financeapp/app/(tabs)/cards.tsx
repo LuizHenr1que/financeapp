@@ -249,6 +249,7 @@ export default function CardsScreen() {
       {/* Modal de escolha do método de cadastro do cartão */}
       <AddCardMethodModal
         ref={addCardModalRef}
+        addCardModalVisible={addCardModalVisible}
         editingCard={editingCard ? { ...(editingCard as any), account: selectedAccountForModal || (editingCard as any).account } : selectedAccountForModal ? ({ account: selectedAccountForModal } as any) : undefined}
         onSave={async (cardData, editingId) => {
           if (editingId) {

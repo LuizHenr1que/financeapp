@@ -25,6 +25,7 @@ class TransactionController {
       }
 
       const userId = req.user.id;
+
       const {
         type,
         amount,
@@ -32,7 +33,7 @@ class TransactionController {
         title,
         date,
         categoryId,
-        accountId,
+        accountId, // accountId: ID da conta de pagamento à qual a transação/cartão está vinculada
         cardId,
         paymentMethod,
         launchType = 'unico',

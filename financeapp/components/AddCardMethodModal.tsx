@@ -25,10 +25,11 @@ export type AddCardMethodModalProps = {
   onOpenFinancePress: () => void;
   editingCard?: any; // CardType | null
   onSave?: (cardData: any, editingId?: string) => Promise<void>;
+  addCardModalVisible?: boolean;
 };
 
 export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
-  ({ onManualPress, onOpenFinancePress, editingCard, onSave }, ref) => {
+  ({ onManualPress, onOpenFinancePress, editingCard, onSave, addCardModalVisible }, ref) => {
     const modalizeRef = React.useRef<Modalize>(null);
     const selectAccountModalRef = useRef<Modalize>(null);
     const [step, setStep] = useState<'choose' | 'manual'>('choose');
