@@ -54,6 +54,7 @@ model Account {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   categories   Category[] // <- relação inversa para categorias por conta
+  cards        Card[]
 
   @@map("accounts")
 }
@@ -139,6 +140,8 @@ model Card {
   closingDay Int?     // dia de fechamento
   dueDay     Int?     // dia de vencimento
   userId     String
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

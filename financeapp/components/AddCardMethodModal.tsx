@@ -11,6 +11,7 @@ import { CreditCard } from 'lucide-react-native';
 import { AccountIconSelectorModal, AccountIconSelectorModalRef, AccountIconOption } from './AccountIconSelectorModal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { AddCardMethodOptions } from './AddCardMethodOptions';
+import { useData } from '@/context/DataContext';
 
 // Adiciona tipagem global para selectedAccountTemp
 // @ts-ignore
@@ -22,10 +23,12 @@ declare global {
 export type AddCardMethodModalProps = {
   onManualPress: () => void;
   onOpenFinancePress: () => void;
+  editingCard?: any; // CardType | null
+  onSave?: (cardData: any, editingId?: string) => Promise<void>;
 };
 
 export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
-  ({ onManualPress, onOpenFinancePress }, ref) => {
+  ({ onManualPress, onOpenFinancePress, editingCard, onSave }, ref) => {
     const modalizeRef = React.useRef<Modalize>(null);
     const selectAccountModalRef = useRef<Modalize>(null);
     const [step, setStep] = useState<'choose' | 'manual'>('choose');
@@ -36,13 +39,9 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
       closingDay: '',
       dueDay: '',
     });
-    // Exemplo de contas
-    const accounts = [
-      { name: 'Nubank', icon: <CreditCard size={24} color={theme.colors.primary} /> },
-      { name: 'Itaú', icon: <CreditCard size={24} color={theme.colors.primary} /> },
-      { name: 'Inter', icon: <CreditCard size={24} color={theme.colors.primary} /> },
-      { name: 'Caixa', icon: <CreditCard size={24} color={theme.colors.primary} /> },
-    ];
+    const { data } = useData();
+    // Substituir accounts por data.accounts
+    const accounts = data.accounts || [];
     // Exemplo de ícones de cartão
     const cardIcons = [
       { label: 'Cartão Azul', icon: <CreditCard size={24} color={'#2196f3'} /> },
@@ -73,12 +72,21 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
     const params = useLocalSearchParams();
     // Preencher o campo ao retornar da tela de contas
     React.useEffect(() => {
-      if (params.selectedAccount) {
-        setForm(f => ({ ...f, account: String(params.selectedAccount) }));
+      if (editingCard) {
+        setForm({
+          account: editingCard.account || editingCard.accountId || '',
+          name: editingCard.name || '',
+          limit: editingCard.limit?.toString() || '',
+          closingDay: editingCard.closingDay?.toString() || '',
+          dueDay: editingCard.dueDay?.toString() || '',
+        });
+        setSelectedCardIcon(editingCard.icon ? { label: editingCard.icon, icon: <CreditCard size={24} color={theme.colors.primary} /> } : null);
+        setSelectedClosingDay(editingCard.closingDay?.toString() || '');
+        setSelectedDueDay(editingCard.dueDay?.toString() || '');
         setStep('manual');
         modalizeRef.current?.open();
       }
-    }, [params.selectedAccount]);
+    }, [editingCard]);
 
     useFocusEffect(
       React.useCallback(() => {
@@ -112,6 +120,12 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
               }}
             
             />
+          ) : accounts.length === 0 ? (
+            <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, padding: 32 }}>
+              <Text style={{ color: theme.colors.text, fontSize: 18, textAlign: 'center', marginBottom: 16 }}>
+                Cadastre uma conta de pagamento antes de adicionar um cartão de crédito.
+              </Text>
+            </View>
           ) : (
             <>
               <Text style={styles.title}>Criar novo cartão</Text>
@@ -119,9 +133,7 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
               <Text style={styles.inputLabel}>Conta de pagamento</Text>
               <TouchableOpacity
                 style={[styles.selectInput, { marginBottom: 16 }]}
-                onPress={() => {
-                  router.push({ pathname: '/accounts', params: { selectMode: 'true' } });
-                }}
+                onPress={() => selectAccountModalRef.current?.open()}
                 activeOpacity={0.7}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -129,7 +141,7 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
                     <CreditCard size={24} color={theme.colors.primary} style={{ marginRight: 8 }} />
                   ) : null}
                   <Text style={{ color: form.account ? theme.colors.text : theme.colors.textSecondary, fontSize: 16 }}>
-                    {form.account ? form.account : 'Selecione conta de pagamento'}
+                    {form.account ? (accounts.find(a => a.id === form.account)?.name || 'Conta selecionada') : 'Selecione conta de pagamento'}
                   </Text>
                 </View>
                 <ChevronRight size={22} color={theme.colors.primary} />
@@ -198,31 +210,43 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
                 <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary, borderWidth: 1 }]} onPress={handleCancel}>
                   <Text style={[styles.actionBtnText, { color: theme.colors.primary }]}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={() => {
-                  // Chama a função de salvar cartão no backend com token de autenticação
-                  import('../src/services/auth').then(({ default: authService }) => {
-                    authService.getToken().then(token => {
-                      if (!token) {
-                        alert('Usuário não autenticado. Faça login novamente.');
-                        return;
-                      }
-                      import('../src/services/card').then(({ default: CardService }) => {
-                        // Campos obrigatórios para o backend: name, type, icon, limit, closingDay, dueDay
-                        const payload = {
-                          name: form.name,
-                          type: 'credit', // valor padrão
-                          icon: selectedCardIcon?.label || '',
-                          limit: form.limit,
-                          closingDay: selectedClosingDay ? Number(selectedClosingDay) : null,
-                          dueDay: selectedDueDay ? Number(selectedDueDay) : null,
-                        };
-                        console.log('🟢 Enviando para backend (criar cartão):', payload);
-                        CardService.createCard(payload, token).then(() => {
-                          handleCancel(); // Fecha o modal após salvar
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]} onPress={async () => {
+                  if (!form.account) {
+                    alert('Selecione uma conta de pagamento.');
+                    return;
+                  }
+                  if (!form.name || !form.limit || !selectedClosingDay || !selectedDueDay) {
+                    alert('Preencha todos os campos obrigatórios.');
+                    return;
+                  }
+                  const payload = {
+                    name: form.name,
+                    type: 'credit',
+                    icon: selectedCardIcon?.label || '',
+                    limit: form.limit,
+                    closingDay: selectedClosingDay ? Number(selectedClosingDay) : null,
+                    dueDay: selectedDueDay ? Number(selectedDueDay) : null,
+                    accountId: form.account,
+                  };
+                  if (onSave) {
+                    await onSave(payload, editingCard?.id);
+                    handleCancel();
+                  } else {
+                    // fallback antigo
+                    import('../src/services/auth').then(({ default: authService }) => {
+                      authService.getToken().then(token => {
+                        if (!token) {
+                          alert('Usuário não autenticado. Faça login novamente.');
+                          return;
+                        }
+                        import('../src/services/card').then(({ default: CardService }) => {
+                          CardService.createCard(payload, token).then(() => {
+                            handleCancel();
+                          });
                         });
                       });
                     });
-                  });
+                  }
                 }}>
                   <Text style={[styles.actionBtnText, { color: theme.colors.surface }]}>Salvar</Text>
                 </TouchableOpacity>
@@ -240,15 +264,15 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
           <Text style={styles.title}>Selecionar conta</Text>
           {accounts.map(acc => (
             <TouchableOpacity
-              key={acc.name}
+              key={acc.id}
               style={styles.accountOption}
               onPress={() => {
-                setForm(f => ({ ...f, account: acc.name }));
+                setForm(f => ({ ...f, account: acc.id }));
                 selectAccountModalRef.current?.close();
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {acc.icon}
+                <CreditCard size={24} color={theme.colors.primary} />
                 <Text style={{ marginLeft: 12, fontSize: 16, color: theme.colors.text }}>{acc.name}</Text>
               </View>
             </TouchableOpacity>

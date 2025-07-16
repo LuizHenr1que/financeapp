@@ -13,7 +13,6 @@ export interface Category {
 export interface Card {
   id: string;
   name: string;
-  lastFour: string;
   type: 'credit' | 'debit';
   brand: string;
   color: string;

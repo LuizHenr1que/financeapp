@@ -22,21 +22,14 @@ interface AddCardMethodModalRef {
 
 export default function CardsScreen() {
   const { data, addCard, updateCard, deleteCard } = useData();
-  const [isEditing, setIsEditing] = useState(false);
   const [editingCard, setEditingCard] = useState<CardType | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    limit: '',
-    closingDay: '',
-    dueDay: '',
-    icon: '',
-  });
-  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [addCardModalVisible, setAddCardModalVisible] = useState(false);
   const [cardToRemove, setCardToRemove] = useState<CardType | null>(null);
   const removeModalRef = useRef<Modalize>(null);
   const addCardModalRef = useRef<AddCardMethodModalRef>(null);
   const params = useLocalSearchParams();
   const router = useRouter();
+  const [selectedAccountForModal, setSelectedAccountForModal] = useState<string | null>(null);
 
   const colors = [
     '#1de9b6', '#0f2e2a', '#ff6b6b', '#4ecdc4', 
@@ -51,6 +44,7 @@ export default function CardsScreen() {
       } else {
         addCardModalRef.current.open();
       }
+      setSelectedAccountForModal(params.selectedAccount as string);
       // Limpa o parâmetro selectedAccount da URL após o uso
       const { selectedAccount, ...rest } = params;
       router.replace({ pathname: '/cards', params: rest });
@@ -70,15 +64,12 @@ export default function CardsScreen() {
   };
 
   const handleEdit = (card: CardType) => {
+    console.log('🟡 Editar cartão:', card);
     setEditingCard(card);
-    setFormData({
-      name: card.name,
-      limit: card.limit.toString(),
-      closingDay: card.closingDay.toString(),
-      dueDay: card.dueDay.toString(),
-      icon: card.icon || '',
-    });
-    setIsEditing(true);
+    setAddCardModalVisible(true);
+    if (addCardModalRef.current && addCardModalRef.current.openManual) {
+      addCardModalRef.current.openManual();
+    }
   };
 
   const handleDelete = (card: CardType) => {
@@ -99,134 +90,13 @@ export default function CardsScreen() {
     setTimeout(() => setCardToRemove(null), 300);
   };
 
-  const handleSave = async () => {
-    if (!formData.name.trim() || !formData.limit || !formData.closingDay || !formData.dueDay) {
-      Alert.alert('Erro', 'Preencha todos os campos');
-      return;
-    }
-
-    const limit = parseFloat(formData.limit);
-    const closingDay = parseInt(formData.closingDay);
-    const dueDay = parseInt(formData.dueDay);
-
-    if (isNaN(limit) || limit <= 0) {
-      Alert.alert('Erro', 'Limite deve ser um valor válido');
-      return;
-    }
-
-    if (isNaN(closingDay) || closingDay < 1 || closingDay > 31) {
-      Alert.alert('Erro', 'Dia do fechamento deve ser entre 1 e 31');
-      return;
-    }
-
-    if (isNaN(dueDay) || dueDay < 1 || dueDay > 31) {
-      Alert.alert('Erro', 'Dia do vencimento deve ser entre 1 e 31');
-      return;
-    }
-
-    try {
-    const cardData = {
-      name: formData.name,
-      limit,
-      closingDay,
-      dueDay,
-      icon: formData.icon,
-      currentSpending: editingCard?.currentSpending || 0,
-    };
-
-    if (editingCard) {
-      await updateCard(editingCard.id, cardData);
-    } else {
-      await addCard(cardData);
-    }
-    resetForm();
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar o cartão');
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      limit: '',
-      closingDay: '',
-      dueDay: '',
-      icon: '',
-    });
-    setEditingCard(null);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.editHeader}>
-          <Text style={styles.editTitle}>
-            {editingCard ? 'Editar Cartão' : 'Novo Cartão'}
-          </Text>
-          <TouchableOpacity onPress={resetForm} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Fechar</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          <Card>
-            <Input
-              label="Nome do Cartão"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-              placeholder="Ex: Cartão Principal"
-            />
-
-            <Input
-              label="Limite (R$)"
-              value={formData.limit}
-              onChangeText={(text) => setFormData({ ...formData, limit: text })}
-              placeholder="0,00"
-              keyboardType="numeric"
-            />
-
-            <Input
-              label="Dia do Fechamento"
-              value={formData.closingDay}
-              onChangeText={(text) => setFormData({ ...formData, closingDay: text })}
-              placeholder="15"
-              keyboardType="numeric"
-            />
-
-            <Input
-              label="Dia do Vencimento"
-              value={formData.dueDay}
-              onChangeText={(text) => setFormData({ ...formData, dueDay: text })}
-              placeholder="10"
-              keyboardType="numeric"
-            />
-
-            <Input
-              label="Ícone do Cartão"
-              value={formData.icon}
-              onChangeText={(text) => setFormData({ ...formData, icon: text })}
-              placeholder="Ex: credit-card, visa, etc."
-            />
-
-            <View style={styles.buttonRow}>
-              <Button
-                title="Cancelar"
-                onPress={resetForm}
-                variant="outline"
-                style={styles.button}
-              />
-              <Button
-                title="Salvar"
-                onPress={handleSave}
-                style={styles.button}
-              />
-            </View>
-          </Card>
-        </ScrollView>
-      </View>
-    );
-  }
+  // Remover as seguintes linhas:
+  // const [isEditing, setIsEditing] = useState(false);
+  // const [formData, setFormData] = useState({ ... });
+  // const [showAddCardModal, setShowAddCardModal] = useState(false);
+  // const handleSave = async () => { ... }
+  // const resetForm = () => { ... }
+  // if (isEditing) { ... return ... }
 
   // Log dos cartões exibidos
   console.log('Cartões exibidos:', data.cards);
@@ -247,7 +117,13 @@ export default function CardsScreen() {
         {/* Add Card Button */}
         <Card style={styles.addButtonCard}>
           <TouchableOpacity
-            onPress={() => addCardModalRef.current?.open()}
+            onPress={() => {
+              setEditingCard(null);
+              setAddCardModalVisible(true);
+              if (addCardModalRef.current && addCardModalRef.current.openManual) {
+                addCardModalRef.current.openManual();
+              }
+            }}
             style={styles.addCardButton}
           >
             <Plus size={24} color={theme.colors.primary} />
@@ -373,13 +249,29 @@ export default function CardsScreen() {
       {/* Modal de escolha do método de cadastro do cartão */}
       <AddCardMethodModal
         ref={addCardModalRef}
+        editingCard={editingCard ? { ...(editingCard as any), account: selectedAccountForModal || (editingCard as any).account } : selectedAccountForModal ? ({ account: selectedAccountForModal } as any) : undefined}
+        onSave={async (cardData, editingId) => {
+          if (editingId) {
+            await updateCard(editingId, cardData);
+          } else {
+            await addCard(cardData);
+          }
+          setEditingCard(null);
+          setAddCardModalVisible(false);
+          setSelectedAccountForModal(null);
+        }}
         onManualPress={() => {
-          addCardModalRef.current?.close();
-          setTimeout(() => setIsEditing(true), 300);
+          setEditingCard(null);
+          setAddCardModalVisible(true);
+          if (addCardModalRef.current && addCardModalRef.current.openManual) {
+            addCardModalRef.current.openManual();
+          }
         }}
         onOpenFinancePress={() => {
-          addCardModalRef.current?.close();
-          // Aqui você pode implementar a lógica do Open Finance futuramente
+          if (addCardModalRef.current) {
+            addCardModalRef.current.close();
+          }
+          // lógica futura para Open Finance
         }}
       />
 

@@ -10,5 +10,6 @@ router.use(auth);
 // Rotas
 router.get('/', CardController.index);
 router.post('/', CardController.create);
+router.put('/:id', CardController.update);
 
 module.exports = router;

@@ -55,7 +55,6 @@ export interface Transaction {
   card?: {
     id: string;
     name: string;
-    lastFour: string;
     type: string;
     brand: string;
     color: string;
