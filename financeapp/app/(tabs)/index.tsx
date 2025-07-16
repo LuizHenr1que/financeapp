@@ -307,8 +307,9 @@ export default function DashboardScreen() {
               <Text style={styles.sectionTitleBold}>Cartões</Text>
             </Text>
             {data.cards.map(card => {
+              const despesasCartao = data.transactions?.filter(t => t.type === 'expense' && t.cardId === card.id) || [];
               const cardLimit = Number(card.limit) || 0;
-              const cardSpending = Number(card.currentSpending) || 0;
+              const cardSpending = despesasCartao.reduce((sum, t) => sum + Number(t.amount), 0);
               const utilization = cardLimit > 0 ? (cardSpending / cardLimit) * 100 : 0;
               return (
                 <View key={card.id} style={styles.cardItem}>

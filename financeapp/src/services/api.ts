@@ -5,19 +5,19 @@ const prodUrl = process.env.EXPO_PUBLIC_API_URL;
 
 // Define a URL base dependendo do ambiente
 const getApiBaseUrl = () => {
-  // if (__DEV__) {
-  //   // Durante desenvolvimento
-  //   if (Platform.OS === 'android') {
-  //     return 'http://10.0.2.2:3000/api'; // Android Emulator
-  //   } else {
-  //     return 'http://localhost:3000/api'; // iOS Simulator
-  //   }
-  // } else {
-  //   // Em produção, pega da variável do .env
-  //   return prodUrl || 'https://financeapp-as0q.onrender.com/api';
-  // }
+  if (__DEV__) {
+    // Durante desenvolvimento
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:3000/api'; // Android Emulator
+    } else {
+      return 'http://localhost:3000/api'; // iOS Simulator
+    }
+  } else {
+    // Em produção, pega da variável do .env
+    return prodUrl || 'https://financeapp-as0q.onrender.com/api';
+  }
 
-   return prodUrl || 'https://financeapp-as0q.onrender.com/api';
+  //  return prodUrl || 'https://financeapp-as0q.onrender.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

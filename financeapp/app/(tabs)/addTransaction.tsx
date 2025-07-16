@@ -32,6 +32,19 @@ function getLocalDateString(date: Date) {
 }
 
 export default function AddTransactionScreen() {
+  // Função para validar limite do cartão antes de cadastrar transação
+  const validateCardLimit = (): boolean => {
+    if (formData.type === 'expense' && formData.cardId) {
+      const selectedOption = availableOptions.find(option => option.id === formData.cardId);
+      if (selectedOption && selectedOption.type === 'card' && typeof selectedOption.limit === 'number') {
+        if (parseFloat(formData.amount.replace(',', '.')) > selectedOption.limit) {
+          Alert.alert('Limite não disponível', 'O valor da despesa excede o limite do cartão.');
+          return false;
+        }
+      }
+    }
+    return true;
+  };
   const { addTransaction, data } = useData();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -78,7 +91,7 @@ export default function AddTransactionScreen() {
   
   // Combinar cartões e contas em uma única lista para seleção
   const availableOptions = [
-    ...availableCards.map(card => ({ ...card, type: 'card' as const })),
+    ...availableCards.map(card => ({ ...card, type: 'card' as const, color: theme.colors.secondary })),
     ...availableAccounts.map(account => ({ ...account, type: 'account' as const }))
   ];
 
@@ -149,7 +162,12 @@ export default function AddTransactionScreen() {
       Alert.alert('Erro', 'Valor deve ser um número válido maior que zero');
       return;
     }
-    
+
+    // Validação do limite do cartão
+    if (!validateCardLimit()) {
+      return;
+    }
+
     setLoading(true);
     try {
       // Encontrar se a opção selecionada é cartão ou conta
@@ -416,7 +434,7 @@ export default function AddTransactionScreen() {
                 key={option.id}
                 style={[
                   styles.cardOption,
-                  { backgroundColor: option.color },
+                  { backgroundColor: option.color ?? theme.colors.secondary },
                   formData.cardId === option.id && styles.cardOptionSelected,
                 ]}
                 onPress={() => setFormData({ ...formData, cardId: option.id })}

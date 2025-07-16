@@ -143,8 +143,10 @@ export default function CardsScreen() {
           </Card>
         ) : (
           data.cards.map((card) => {
+            // Log das transações de despesas
+            const despesasCartao = data.transactions.filter(t => t.type === 'expense' && t.cardId === card.id);
             const cardLimit = Number(card.limit) || 0;
-            const cardSpending = Number(card.currentSpending) || 0;
+            const cardSpending = despesasCartao.reduce((sum, t) => sum + Number(t.amount), 0);
             const utilization = cardLimit > 0 ? (cardSpending / cardLimit) * 100 : 0;
             const available = cardLimit - cardSpending;
 
@@ -229,7 +231,7 @@ export default function CardsScreen() {
                     />
                   </View>
                   <Text style={styles.utilizationText}>
-                    {utilization.toFixed(1)}% utilizado
+                    {`R$ ${cardSpending.toFixed(2)} utilizado`}
                   </Text>
                 </View>
 
