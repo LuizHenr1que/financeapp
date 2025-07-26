@@ -24,7 +24,7 @@ export interface Category {
 export interface Card {
   id: string;
   name: string;
-  type?: string; // opcional, caso queira usar
+  type?: 'credit' | 'debit';
   icon: string;
   limit: number;
   currentSpending: number;

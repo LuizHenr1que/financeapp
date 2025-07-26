@@ -97,9 +97,6 @@ export default function CardsScreen() {
   // const handleSave = async () => { ... }
   // const resetForm = () => { ... }
   // if (isEditing) { ... return ... }
-
-  // Log dos cartões exibidos
-  console.log('Cartões exibidos:', data.cards);
   // Garante que o cache de imagens está carregado (executa uma vez)
   React.useEffect(() => {
     preloadAccountIcons();

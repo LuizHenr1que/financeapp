@@ -32,6 +32,66 @@ export interface Account {
 }
 
 class DataService {
+  // Adicionar novo cartão
+  async addCard(cardData: Omit<Card, 'id' | 'userId'> & { accountId: string }) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('📤 Enviando novo cartão para o backend...', cardData);
+      const response = await apiService.post<{ card: Card }>('/cards', cardData, token);
+      if (response.error) {
+        console.error('❌ Erro ao criar cartão:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      console.log('✅ Cartão criado no backend:', response.data?.card);
+      return { data: response.data, message: 'Cartão criado com sucesso' };
+    } catch (error) {
+      console.error('❌ Erro na requisição de criação de cartão:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
+
+  // Atualizar cartão
+  async updateCard(id: string, cardUpdate: Partial<Card>) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('✏️ Atualizando cartão no backend...', id, cardUpdate);
+      const response = await apiService.put<{ card: Card }>(`/cards/${id}`, cardUpdate, token);
+      if (response.error) {
+        console.error('❌ Erro ao atualizar cartão:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      return { data: response.data, message: 'Cartão atualizado com sucesso' };
+    } catch (error) {
+      console.error('❌ Erro na requisição de atualização de cartão:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
+
+  // Excluir cartão
+  async deleteCard(id: string) {
+    try {
+      const token = await authService.getToken();
+      if (!token) {
+        return { error: 'Token de autenticação não encontrado' };
+      }
+      console.log('🗑️ Excluindo cartão do backend...', id);
+      const response = await apiService.delete(`/cards/${id}`, token);
+      if (response.error) {
+        console.error('❌ Erro ao excluir cartão:', response.error);
+        return { error: response.error, details: response.details };
+      }
+      return { success: true, message: (response.data && (response.data as { message?: string }).message) || 'Cartão excluído com sucesso' };
+    } catch (error) {
+      console.error('❌ Erro na requisição de exclusão de cartão:', error);
+      return { error: 'Erro de conexão' };
+    }
+  }
   // Buscar categorias do usuário
   async getCategories() {
     try {

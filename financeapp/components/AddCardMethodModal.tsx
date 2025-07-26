@@ -43,6 +43,10 @@ export const AddCardMethodModal = forwardRef<any, AddCardMethodModalProps>(
     const { data } = useData();
     // Substituir accounts por data.accounts
     const accounts = data.accounts || [];
+    // Adiciona log dos cartões recebidos do backend
+    if (data.cards) {
+      console.log('Cartões cadastrados:', data.cards);
+    }
     // Exemplo de ícones de cartão
     const cardIcons = [
       { label: 'Cartão Azul', icon: <CreditCard size={24} color={'#2196f3'} /> },

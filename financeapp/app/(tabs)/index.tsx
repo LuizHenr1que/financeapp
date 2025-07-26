@@ -407,14 +407,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.medium,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+
   },
   filterMonthText: {
     fontSize: theme.typography.medium,
@@ -431,14 +424,6 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.medium,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   filterExpandText: {
     fontSize: theme.typography.medium,
@@ -455,15 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xl,
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.borderRadius.large,
-    // Sombra para dar profundidade
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+
   },
   balanceLabel: {
     fontSize: theme.typography.medium,

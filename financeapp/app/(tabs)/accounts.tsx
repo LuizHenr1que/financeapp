@@ -55,7 +55,7 @@ export default function AccountsScreen() {
     <View style={styles.container}>
       {/* Passa a prop onBackPress para exibir o botão de voltar apenas nesta página */}
       <Header
-        type="cards"
+        type="accounts"
         onBackPress={() => router.back()}
         onViewPress={() => {}}
         onFilterPress={() => {}}

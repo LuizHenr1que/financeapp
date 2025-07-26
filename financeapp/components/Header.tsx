@@ -5,7 +5,7 @@ import { ChevronLeft, Bell, Menu, HelpCircle, Eye, Filter, Search } from 'lucide
 import { theme } from '@/theme';
 
 interface HeaderProps {
-  type: 'dashboard' | 'transactions' | 'categories' | 'cards' | 'goals' | 'reports';
+  type: 'dashboard' | 'transactions' | 'categories' | 'cards' | 'accounts' | 'goals' | 'reports';
   userName?: string;
   userPhoto?: string;
   onNotificationPress?: () => void;
@@ -132,26 +132,32 @@ export function Header({
       ) : null}
       <View style={styles.leftSection}>
         <View style={styles.transactionInfo}>
+          <Text style={styles.transactionTitle}>meus</Text>
+          <Text style={styles.transactionSubtitle}>cartões</Text>
+        </View>
+      </View>
+      {/* Seção direita - Ícones de ação */}
+    </View>
+  );
+
+  const renderAccountsHeader = () => (
+    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.md }]}> 
+      <StatusBar backgroundColor={theme.colors.primary} barStyle="light-content" />
+      {onBackPress ? (
+        <TouchableOpacity onPress={onBackPress} style={{ paddingRight: theme.spacing.md }}>
+          <ChevronLeft size={28} color={theme.colors.title} />
+        </TouchableOpacity>
+      ) : null}
+      <View style={styles.leftSection}>
+        <View style={styles.transactionInfo}>
           <Text style={styles.transactionTitle}>minhas</Text>
           <Text style={styles.transactionSubtitle}>contas</Text>
         </View>
       </View>
-      
       {/* Seção direita - Ícones de ação */}
-      <View style={styles.rightSection}>
-        <TouchableOpacity onPress={onViewPress} style={styles.iconButton}>
-          <Eye size={24} color={theme.colors.title} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onFilterPress} style={styles.iconButton}>
-          <Filter size={24} color={theme.colors.title} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onSearchPress} style={styles.iconButton}>
-          <Search size={24} color={theme.colors.title} />
-        </TouchableOpacity>
-      </View>
     </View>
   );
-
+      
   const renderGoalsHeader = () => (
     <View style={[styles.header, { paddingTop: insets.top + theme.spacing.md }]}>
       <StatusBar backgroundColor={theme.colors.primary} barStyle="light-content" />
@@ -216,6 +222,8 @@ export function Header({
         return renderCategoriesHeader();
       case 'cards':
         return renderCardsHeader();
+      case 'accounts':
+        return renderAccountsHeader();
       case 'goals':
         return renderGoalsHeader();
       case 'reports':

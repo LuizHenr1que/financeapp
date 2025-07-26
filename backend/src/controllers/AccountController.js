@@ -10,7 +10,6 @@ class AccountController {
         where: { userId },
         orderBy: { name: 'asc' }
       });
-
       res.json({ accounts });
     } catch (error) {
       console.error('Erro ao listar contas:', error);

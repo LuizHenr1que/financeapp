@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
     if (Platform.OS === 'android') {
       return 'http://10.0.2.2:3000/api'; // Android Emulator
     } else {
-      return 'http://localhost:3000/api'; // iOS Simulator
+      return 'http://localhost:3000/api'; 
     }
   } else {
     // Em produção, pega da variável do .env

@@ -9,6 +9,11 @@ class CardController {
         where: { userId },
         orderBy: { name: 'asc' }
       });
+      if (cards.length === 0) {
+        console.log('Nenhum cartão cadastrado para o usuário:', userId);
+      } else {
+        console.log('Cartões cadastrados:', cards);
+      }
       res.json({ cards });
     } catch (error) {
       console.error('Erro ao listar cartões:', error);

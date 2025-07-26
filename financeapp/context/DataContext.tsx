@@ -193,16 +193,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (response.data?.cards) {
         console.log(`✅ ${response.data.cards.length} cartões carregados do backend`);
-        // Mapear os cartões do backend para o formato local, usando os campos reais
+        // Mapear os cartões do backend para o formato local, mantendo todos os campos recebidos
         const mappedCards: Card[] = response.data.cards.map((c: any) => ({
           id: c.id,
           name: c.name,
           type: c.type ?? '',
           icon: c.icon ?? '',
-          limit: typeof c.limit === 'number' ? c.limit : 0,
-          currentSpending: 0, // Valor padrão (não vem do backend ainda)
+          limit: c.limit !== undefined ? Number(c.limit) : 0,
+          currentSpending: typeof c.currentSpending === 'number' ? c.currentSpending : 0,
           closingDay: Number(c.closingDay) || 1,
           dueDay: Number(c.dueDay) || 1,
+          userId: c.userId ?? '',
+          accountId: c.accountId ?? '',
+          createdAt: c.createdAt ?? null,
+          updatedAt: c.updatedAt ?? null
         }));
 
         setData(prevData => ({
@@ -322,25 +326,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addCard = async (card: Omit<Card, 'id'>) => {
-    const newCard: Card = { ...card, id: generateId() };
-    const newData = { ...data, cards: [...data.cards, newCard] };
-    await saveData(newData);
+    // Envia para o backend
+    const response = await dataService.addCard(card as any);
+    if (response.error) {
+      Toast.show({ type: 'error', text1: 'Erro ao adicionar cartão', text2: response.error });
+      return;
+    }
+    // Atualiza local após sucesso
+    await loadCards();
+    Toast.show({ type: 'success', text1: 'Cartão adicionado com sucesso!' });
   };
 
   const updateCard = async (id: string, cardUpdate: Partial<Card>) => {
-    const newData = {
-      ...data,
-      cards: data.cards.map(card => card.id === id ? { ...card, ...cardUpdate } : card)
-    };
-    await saveData(newData);
+    const response = await dataService.updateCard(id, cardUpdate);
+    if (response.error) {
+      Toast.show({ type: 'error', text1: 'Erro ao atualizar cartão', text2: response.error });
+      return;
+    }
+    await loadCards();
+    Toast.show({ type: 'success', text1: 'Cartão atualizado com sucesso!' });
   };
 
   const deleteCard = async (id: string) => {
-    const newData = {
-      ...data,
-      cards: data.cards.filter(card => card.id !== id)
-    };
-    await saveData(newData);
+    const response = await dataService.deleteCard(id);
+    if (response.error) {
+      Toast.show({ type: 'error', text1: 'Erro ao excluir cartão', text2: response.error });
+      return;
+    }
+    await loadCards();
+    Toast.show({ type: 'success', text1: 'Cartão excluído com sucesso!' });
   };
 
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
