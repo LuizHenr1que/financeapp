@@ -35,6 +35,8 @@ export default function AccountsScreen() {
     const res = await api.get<{ accounts: any[] }>('/accounts', token);
     if (res.data && res.data.accounts) {
       setAccounts(res.data.accounts);
+      // Adiciona log para ver os IDs das contas
+      console.log('Contas carregadas:', res.data.accounts.map(acc => ({ id: acc.id, nome: acc.name })));
     }
     setLoading(false);
   };

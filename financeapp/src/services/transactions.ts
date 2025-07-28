@@ -8,7 +8,7 @@ export interface CreateTransactionRequest {
   description: string;
   date: string;
   categoryId: string;
-  accountId: string;
+  accountId?: string;
   cardId?: string;
   paymentMethod?: 'cash' | 'pix' | 'card';
   launchType?: 'unico' | 'recorrente' | 'parcelado';
@@ -136,9 +136,6 @@ class TransactionsService {
         return { error: 'Token de autenticação não encontrado' };
       }
 
-      console.log('🔑 Token encontrado, fazendo requisição...');
-
-      // Construir query string
       const queryParams = new URLSearchParams();
       if (params) {
         Object.entries(params).forEach(([key, value]) => {

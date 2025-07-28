@@ -26,7 +26,8 @@ class TransactionController {
 
       const userId = req.user.id;
 
-      const {
+
+      let {
         type,
         amount,
         description,
@@ -41,6 +42,13 @@ class TransactionController {
         valorComoParcela = false,
         recurrenceType
       } = req.body;
+
+      // Ajustar o sinal do amount conforme o tipo da transação
+      if (type === 'expense' && amount > 0) {
+        amount = -Math.abs(amount);
+      } else if (type === 'income' && amount < 0) {
+        amount = Math.abs(amount);
+      }
 
       // Verificar se a categoria pertence ao usuário
       const category = await prisma.category.findFirst({

@@ -11,6 +11,8 @@ import {
   Platform,
   FlatList,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
+
 import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { useData } from '@/context/DataContext';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -129,37 +131,35 @@ export default function AddTransactionScreen() {
   }, [params?.type]);
 
   const handleSave = async () => {
-    // Validação específica de cada campo
     if (!formData.amount || formData.amount.trim() === '') {
-      Alert.alert('Erro', 'Por favor, preencha o valor da transação');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Por favor, preencha o valor da transação' });
       return;
     }
     
     if (!formData.categoryId) {
-      Alert.alert('Erro', 'Por favor, selecione uma categoria');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Por favor, selecione uma categoria' });
       return;
     }
     
     if (!formData.description || formData.description.trim() === '') {
-      Alert.alert('Erro', 'Por favor, preencha a descrição da transação');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Por favor, preencha a descrição da transação' });
       return;
     }
     
     if (!formData.cardId) {
-      Alert.alert('Erro', 'Por favor, selecione um cartão ou conta');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Por favor, selecione um cartão ou conta' });
       return;
     }
     
-    // Verificar se a opção selecionada existe nas opções disponíveis
     const selectedOption = availableOptions.find(option => option.id === formData.cardId);
     if (!selectedOption) {
-      Alert.alert('Erro', 'Cartão ou conta selecionada não é válida');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Cartão ou conta selecionada não é válida' });
       return;
     }
 
     const amount = parseFloat(formData.amount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Erro', 'Valor deve ser um número válido maior que zero');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Valor deve ser um número válido maior que zero' });
       return;
     }
 
@@ -173,6 +173,13 @@ export default function AddTransactionScreen() {
       // Encontrar se a opção selecionada é cartão ou conta
       const selectedOption = availableOptions.find(option => option.id === formData.cardId);
       
+      let accountId: string | undefined = undefined;
+      let cardId: string | undefined = undefined;
+      if (selectedOption?.type === 'account') {
+        accountId = selectedOption.id;
+      } else if (selectedOption?.type === 'card') {
+        cardId = selectedOption.id;
+      }
       const transactionData = {
         type: formData.type,
         amount,
@@ -180,9 +187,8 @@ export default function AddTransactionScreen() {
         description: formData.description,
         date: formData.date,
         categoryId: formData.categoryId,
-        // Se é cartão, usar cardId e accountId. Se é conta, usar apenas accountId
-        accountId: formData.cardId, // Sempre enviar accountId
-        cardId: selectedOption?.type === 'card' ? formData.cardId : undefined, // Só enviar cardId se for cartão
+        accountId,
+        cardId,
         paymentMethod: formData.paymentMethod,
         launchType: formData.launchType,
         installments: formData.installments ? parseInt(formData.installments) : undefined,
@@ -192,16 +198,12 @@ export default function AddTransactionScreen() {
 
       console.log('💰 === DADOS DA TRANSAÇÃO A SER ENVIADA ===');
       console.log('📊 TransactionData:', JSON.stringify(transactionData, null, 2));
-      console.log('🎯 Opção selecionada:', selectedOption ? `${selectedOption.name} (${selectedOption.type})` : 'Nenhuma');
-      console.log('🎯 ID selecionado:', formData.cardId);
-      console.log('🎯 AccountId que será enviado:', formData.cardId);
-      console.log('🎯 CardId que será enviado:', selectedOption?.type === 'card' ? formData.cardId : 'undefined');
       console.log('💰 === FIM DOS DADOS ===');
 
       await addTransaction(transactionData);
       router.back();
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar a transação');
+      Toast.show({ type: 'error', text1: 'Erro', text2: 'Não foi possível salvar a transação' });
     } finally {
       setLoading(false);
     }
@@ -437,7 +439,10 @@ export default function AddTransactionScreen() {
                   { backgroundColor: option.color ?? theme.colors.secondary },
                   formData.cardId === option.id && styles.cardOptionSelected,
                 ]}
-                onPress={() => setFormData({ ...formData, cardId: option.id })}
+                onPress={() => {
+                  console.log('Selecionado:', option);
+                  setFormData({ ...formData, cardId: option.id });
+                }}
               >
                 <Text style={styles.cardOptionText}>
                   {option.name} {option.type === 'account' ? '(Conta)' : '(Cartão)'}

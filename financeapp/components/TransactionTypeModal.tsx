@@ -45,20 +45,20 @@ export const TransactionTypeModal = forwardRef<Modalize, TransactionTypeModalPro
       color: theme.colors.error,
       route: '/add?type=expense'
     },
-    { 
-      icon: RefreshCw, 
-      title: 'Transferência',
-      subtitle: 'Entre contas',
-      color: theme.colors.warning,
-      route: '/add?type=transfer'
-    },
+    // { 
+    //   icon: RefreshCw, 
+    //   title: 'Transferência',
+    //   subtitle: 'Entre contas',
+    //   color: theme.colors.warning,
+    //   route: '/add?type=transfer'
+    // },
   ];
 
   return (
     <Modalize
       ref={ref}
       snapPoint={350}
-      modalHeight={400}
+      modalHeight={300}
       handlePosition="inside"
       handleStyle={styles.handle}
       modalStyle={styles.modal}

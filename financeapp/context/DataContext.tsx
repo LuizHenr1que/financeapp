@@ -374,13 +374,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         description: transaction.description,
         date: transaction.date,
         categoryId: transaction.categoryId,
-        accountId: transaction.cardId || '', // Usar cardId como accountId
-        cardId: transaction.cardId,
         paymentMethod: transaction.paymentMethod,
         launchType: transaction.launchType,
         installments: transaction.installments,
         valorComoParcela: transaction.valorComoParcela,
-        recurrenceType: transaction.recurrenceType
+        recurrenceType: transaction.recurrenceType,
+        ...(transaction.accountId && transaction.accountId !== '' ? { accountId: transaction.accountId } : {}),
+        ...(transaction.cardId && transaction.cardId !== '' ? { cardId: transaction.cardId } : {}),
       };
 
       const response = await transactionsService.createTransaction(transactionRequest);
@@ -412,7 +412,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           parentTransactionId: t.parentTransactionId
         }));
 
-        // Atualizar o estado local com as novas transações
         setData(prevData => ({
           ...prevData,
           transactions: [...prevData.transactions, ...mappedTransactions]
@@ -556,8 +555,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
     
     const balance = data.transactions.reduce((total, transaction) => {
-      const amount = Number(transaction.amount) || 0;
-      return transaction.type === 'income' ? total + amount : total - amount;
+      return total + (Number(transaction.amount) || 0);
     }, 0);
     
     return Number(balance) || 0;
@@ -573,10 +571,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     
     const income = data.transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
-        return transaction.type === 'income' && 
-               transactionDate.getMonth() === currentMonth && 
-               transactionDate.getFullYear() === currentYear;
+        const date = new Date(transaction.date);
+        return transaction.type === 'income' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       })
       .reduce((total, transaction) => total + (Number(transaction.amount) || 0), 0);
       
@@ -593,10 +589,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     
     const expenses = data.transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
-        return transaction.type === 'expense' && 
-               transactionDate.getMonth() === currentMonth && 
-               transactionDate.getFullYear() === currentYear;
+        const date = new Date(transaction.date);
+        return transaction.type === 'expense' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       })
       .reduce((total, transaction) => total + (Number(transaction.amount) || 0), 0);
       
@@ -615,17 +609,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     
     data.transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
-        return transaction.type === 'expense' && 
-               transactionDate.getMonth() === currentMonth && 
-               transactionDate.getFullYear() === currentYear;
+        const date = new Date(transaction.date);
+        return transaction.type === 'expense' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       })
       .forEach(transaction => {
-        if (categoryTotals[transaction.categoryId]) {
-          categoryTotals[transaction.categoryId] += transaction.amount;
-        } else {
-          categoryTotals[transaction.categoryId] = transaction.amount;
+        const amount = Number(transaction.amount) || 0;
+        if (!categoryTotals[transaction.categoryId]) {
+          categoryTotals[transaction.categoryId] = 0;
         }
+        categoryTotals[transaction.categoryId] += amount;
       });
 
     return Object.entries(categoryTotals).map(([categoryId, amount]) => {
