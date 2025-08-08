@@ -18,6 +18,15 @@ FinanceApp é uma solução completa para gestão financeira pessoal, composta p
 ---
 
 ## Visão Geral
+
+### Telas do App
+
+<p align="center">
+    <img src="screenhome.png" alt="Tela Principal" width="250" />
+    <img src="screenlogin.png" alt="Tela de Login" width="250" />
+    <img src="screencadastro.png" alt="Tela de Cadastro" width="250" />
+    <img src="screentransações.png" alt="Tela de Transações" width="250" />
+</p>
 O FinanceApp é dividido em dois principais módulos:
 - **Frontend (Mobile):** Aplicativo desenvolvido com React Native e Expo, focado em experiência do usuário, responsividade e integração com recursos nativos.
 - **Backend (API):** API Node.js com Express, utilizando Prisma ORM para persistência de dados em banco relacional, autenticação JWT, e integração com serviços externos.
