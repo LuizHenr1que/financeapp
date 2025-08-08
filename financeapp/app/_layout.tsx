@@ -16,6 +16,7 @@ import { Loading } from '@/components/Loading';
 import { CustomSplashScreen } from '@/components';
 import { useLoading } from '@/context/LoadingContext';
 import AppRoutes from './AppRoutes';
+import DebugPanel from '@/components/DebugPanel';
 
 import Toast from 'react-native-toast-message';
 
@@ -48,6 +49,7 @@ export default function RootLayout() {
               <MenuModalProvider>
                 <TransactionTypeModalProvider>
                   <AppContent />
+                  <DebugPanel />
                   <Toast />
                 </TransactionTypeModalProvider>
               </MenuModalProvider>

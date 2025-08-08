@@ -47,10 +47,14 @@ export default function AddTransactionScreen() {
     }
     return true;
   };
-  const { addTransaction, data } = useData();
+  const { addTransaction, updateTransaction, data } = useData();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+
+  // Verifica se é modo edição
+  const isEditMode = Boolean(params?.editId);
+  const editingTransaction = data.transactions.find(t => t.id === params?.editId);
 
   const [formData, setFormData] = useState({
     type: 'income' as 'income' | 'expense',
@@ -128,7 +132,28 @@ export default function AddTransactionScreen() {
     if (params?.type === 'income' || params?.type === 'expense') {
       setFormData(prev => ({ ...prev, type: params.type as 'income' | 'expense', categoryId: '' }));
     }
-  }, [params?.type]);
+
+    // Se é modo edição, preenche o formulário com os dados da transação
+    if (isEditMode && editingTransaction) {
+      setFormData({
+        type: editingTransaction.type,
+        amount: editingTransaction.amount.toString().replace('.', ','),
+        title: editingTransaction.title || '',
+        date: editingTransaction.date,
+        categoryId: editingTransaction.categoryId,
+        paymentMethod: editingTransaction.paymentMethod,
+        cardId: editingTransaction.cardId || '',
+        installments: editingTransaction.installments?.toString() || '',
+        description: editingTransaction.description,
+        launchType: editingTransaction.launchType || 'unico',
+        valorComoParcela: editingTransaction.valorComoParcela || false,
+      });
+
+      if (editingTransaction.recurrenceType) {
+        setRecurrenceType(editingTransaction.recurrenceType);
+      }
+    }
+  }, [params?.type, isEditMode, editingTransaction]);
 
   const handleSave = async () => {
     if (!formData.amount || formData.amount.trim() === '') {
@@ -163,9 +188,11 @@ export default function AddTransactionScreen() {
       return;
     }
 
-    // Validação do limite do cartão
-    if (!validateCardLimit()) {
-      return;
+    // Validação do limite do cartão (apenas para novas transações ou se o valor aumentou)
+    if (!isEditMode || (editingTransaction && amount > editingTransaction.amount)) {
+      if (!validateCardLimit()) {
+        return;
+      }
     }
 
     setLoading(true);
@@ -200,10 +227,22 @@ export default function AddTransactionScreen() {
       console.log('📊 TransactionData:', JSON.stringify(transactionData, null, 2));
       console.log('💰 === FIM DOS DADOS ===');
 
-      await addTransaction(transactionData);
+      if (isEditMode && editingTransaction) {
+        // Atualizar transação existente
+        await updateTransaction(editingTransaction.id, transactionData);
+        Toast.show({ type: 'success', text1: 'Sucesso', text2: 'Transação atualizada com sucesso!' });
+      } else {
+        // Criar nova transação
+        await addTransaction(transactionData);
+        Toast.show({ type: 'success', text1: 'Sucesso', text2: 'Transação criada com sucesso!' });
+      }
       router.back();
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Erro', text2: 'Não foi possível salvar a transação' });
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Erro', 
+        text2: isEditMode ? 'Não foi possível atualizar a transação' : 'Não foi possível salvar a transação' 
+      });
     } finally {
       setLoading(false);
     }
@@ -246,7 +285,9 @@ export default function AddTransactionScreen() {
             style={styles.typeSelectTop}
             onPress={() => typeModalRef.current?.open()}
           >
-            <Text style={styles.typeSelectTopText}>{selectedType?.label}</Text>
+            <Text style={styles.typeSelectTopText}>
+              {isEditMode ? `Editar ${selectedType?.label}` : selectedType?.label}
+            </Text>
             <ChevronDown size={20} color="#fff" style={{ marginLeft: 6 }} />
           </TouchableOpacity>
         </View>
@@ -509,7 +550,10 @@ export default function AddTransactionScreen() {
         {/* Botões de ação */}
         <View style={styles.buttonRow}>
           <Button
-            title={loading ? 'Adicionando...' : 'Adicionar'}
+            title={loading 
+              ? (isEditMode ? 'Atualizando...' : 'Adicionando...') 
+              : (isEditMode ? 'Atualizar' : 'Adicionar')
+            }
             onPress={handleSave}
             disabled={loading}
             style={{ width: '100%' }}

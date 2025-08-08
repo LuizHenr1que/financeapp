@@ -14,11 +14,10 @@ async function startServer() {
     console.log('✅ Conectado ao banco de dados PostgreSQL');
     
     // Iniciar servidor
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
       console.log(`📱 API disponível em http://localhost:${PORT}/api`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`📱 Para Android Emulator: http://10.0.2.2:${PORT}/api`);
     });
     
   } catch (error) {

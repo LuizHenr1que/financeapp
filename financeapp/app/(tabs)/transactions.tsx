@@ -28,8 +28,14 @@ export default function TransactionsScreen() {
   };
 
   const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-    // Aqui você pode navegar para uma tela de edição, se desejar
+    // Navegar para a tela de adicionar transação em modo edição
+    router.push({
+      pathname: '/(tabs)/addTransaction',
+      params: {
+        editId: transaction.id,
+        type: transaction.type
+      }
+    });
   };
 
   const handleDelete = (transactionId: string) => {

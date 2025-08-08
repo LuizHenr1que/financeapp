@@ -12,6 +12,7 @@ import { ICONS, globalImageCache, preloadAccountIcons } from '@/components/Accou
 import { AddCardMethodModal } from '@/components/AddCardMethodModal';
 import { Modalize } from 'react-native-modalize';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Tipagem customizada para o ref do modal
 interface AddCardMethodModalRef {
@@ -30,6 +31,23 @@ export default function CardsScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const [selectedAccountForModal, setSelectedAccountForModal] = useState<string | null>(null);
+
+  // Verificação de segurança para garantir que data existe
+  if (!data) {
+    return (
+      <View style={styles.container}>
+        <Header 
+          type="cards"
+          onViewPress={() => {}}
+          onFilterPress={() => {}}
+          onSearchPress={() => {}}
+        />
+        <View style={[styles.content, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text>Carregando cartões...</Text>
+        </View>
+      </View>
+    );
+  }
 
   const colors = [
     '#1de9b6', '#0f2e2a', '#ff6b6b', '#4ecdc4', 
@@ -64,6 +82,10 @@ export default function CardsScreen() {
   };
 
   const handleEdit = (card: CardType) => {
+    if (!card || !card.id) {
+      console.error('❌ Cartão inválido para edição:', card);
+      return;
+    }
     console.log('🟡 Editar cartão:', card);
     setEditingCard(card);
     setAddCardModalVisible(true);
@@ -73,12 +95,16 @@ export default function CardsScreen() {
   };
 
   const handleDelete = (card: CardType) => {
+    if (!card || !card.id) {
+      console.error('❌ Cartão inválido para exclusão:', card);
+      return;
+    }
     setCardToRemove(card);
     setTimeout(() => removeModalRef.current?.open(), 100);
   };
 
   const confirmRemove = () => {
-    if (cardToRemove) {
+    if (cardToRemove && cardToRemove.id) {
       deleteCard(cardToRemove.id);
       removeModalRef.current?.close();
       setTimeout(() => setCardToRemove(null), 300);
@@ -101,14 +127,33 @@ export default function CardsScreen() {
   React.useEffect(() => {
     preloadAccountIcons();
   }, []);
+
+  // Debug para verificar a estrutura dos dados
+  React.useEffect(() => {
+    console.log('🔍 Debug - Dados recebidos no cards:', { 
+      hasData: !!data,
+      cardsLength: data?.cards?.length || 0,
+      cards: data?.cards?.map(card => ({
+        id: card?.id,
+        name: card?.name,
+        icon: card?.icon,
+        limit: card?.limit,
+        closingDay: card?.closingDay,
+        dueDay: card?.dueDay
+      })),
+      transactionsLength: data?.transactions?.length || 0
+    });
+  }, [data]);
+
   return (
-    <View style={styles.container}>
-      <Header 
-        type="cards"
-        onViewPress={handleViewPress}
-        onFilterPress={handleFilterPress}
-        onSearchPress={handleSearchPress}
-      />
+    <ErrorBoundary>
+      <View style={styles.container}>
+        <Header 
+          type="cards"
+          onViewPress={handleViewPress}
+          onFilterPress={handleFilterPress}
+          onSearchPress={handleSearchPress}
+        />
 
       <ScrollView style={styles.content}>
         {/* Add Card Button */}
@@ -129,7 +174,7 @@ export default function CardsScreen() {
         </Card>
 
         {/* Cards List */}
-        {data.cards.length === 0 ? (
+        {!data || !data.cards || data.cards.length === 0 ? (
           <Card style={styles.emptyCard}>
             <CreditCard size={48} color={theme.colors.textSecondary} />
             <Text style={styles.emptyTitle}>Nenhum cartão cadastrado</Text>
@@ -139,110 +184,203 @@ export default function CardsScreen() {
             </Text>
           </Card>
         ) : (
-          data.cards.map((card) => {
-            // Log das transações de despesas
-            const despesasCartao = data.transactions.filter(t => t.type === 'expense' && t.cardId === card.id);
-            const cardLimit = Number(card.limit) || 0;
-            const cardSpending = despesasCartao.reduce((sum, t) => sum + Number(t.amount), 0);
-            const utilization = cardLimit > 0 ? (cardSpending / cardLimit) * 100 : 0;
-            const available = cardLimit - cardSpending;
+          (() => {
+            try {
+              return data.cards
+                .filter(card => {
+                  if (!card || !card.id) {
+                    console.warn('⚠️ Cartão inválido filtrado:', card);
+                    return false;
+                  }
+                  return true;
+                })
+                .map((card) => {
+                try {
+                  // Verificação de segurança para transações
+                  const transactions = data.transactions || [];
+                  const despesasCartao = transactions.filter(t => 
+                    t && t.type === 'expense' && t.cardId === card.id
+                  );
+                  
+                  // Conversões seguras com valores padrão
+                  const cardLimit = card.limit ? Number(card.limit) : 0;
+                  const cardSpending = despesasCartao.reduce((sum, t) => {
+                    const amount = t && t.amount ? Number(t.amount) : 0;
+                    return sum + amount;
+                  }, 0);
+                  
+                  const utilization = cardLimit > 0 ? (cardSpending / cardLimit) * 100 : 0;
+                  const available = cardLimit - cardSpending;
 
-            return (
-              <Card key={card.id} style={styles.cardItem}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardInfo}>
-                    {/* Exibir imagem do banco se houver no cache global, senão emoji, senão nome */}
-                    {(() => {
-                      const iconOption = ICONS.find(i => {
-                        const iconValue = (card.icon || '').toLowerCase().trim();
-                        return (
-                          i.key.toLowerCase() === iconValue ||
-                          i.label.toLowerCase() === iconValue
-                        );
-                      });
-                      if (iconOption && iconOption.image && globalImageCache[iconOption.key]) {
-                        return (
-                          <Image
-                            source={{ uri: globalImageCache[iconOption.key] }}
-                            style={{ width: 32, height: 32, marginRight: 8 }}
-                            resizeMode="contain"
+                  return (
+                    <Card key={card.id} style={styles.cardItem}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardInfo}>
+                          {/* Exibir imagem do banco se houver no cache global, senão emoji, senão nome */}
+                          {(() => {
+                            try {
+                              console.log('🔍 Renderizando ícone para cartão:', {
+                                cardId: card?.id,
+                                cardIcon: card?.icon,
+                                cardType: typeof card,
+                                iconsType: typeof ICONS,
+                                iconsLength: ICONS?.length,
+                                globalCacheType: typeof globalImageCache,
+                                globalCacheKeys: globalImageCache ? Object.keys(globalImageCache) : 'undefined'
+                              });
+
+                              // Verificações de segurança extras
+                              if (!card || typeof card !== 'object') {
+                                console.warn('⚠️ Card object inválido:', card);
+                                return <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>💳</Text>;
+                              }
+
+                              if (!ICONS || !Array.isArray(ICONS)) {
+                                console.warn('⚠️ ICONS não está definido ou não é array:', ICONS);
+                                return <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>💳</Text>;
+                              }
+
+                              const iconValue = card.icon && typeof card.icon === 'string' 
+                                ? card.icon.toLowerCase().trim() 
+                                : '';
+                              
+                              console.log('🔍 IconValue processado:', iconValue);
+
+                              if (!iconValue) {
+                                console.log('🔍 IconValue vazio, usando emoji padrão');
+                                return (
+                                  <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>💳</Text>
+                                );
+                              }
+
+                              const iconOption = ICONS.find(i => {
+                                if (!i || typeof i !== 'object') return false;
+                                return (
+                                  (i.key && i.key.toLowerCase() === iconValue) ||
+                                  (i.label && i.label.toLowerCase() === iconValue)
+                                );
+                              });
+                              
+                              console.log('🔍 IconOption encontrado:', iconOption);
+
+                              if (iconOption && iconOption.image && globalImageCache && globalImageCache[iconOption.key]) {
+                                console.log('🔍 Usando imagem do cache:', globalImageCache[iconOption.key]);
+                                return (
+                                  <Image
+                                    source={{ uri: globalImageCache[iconOption.key] }}
+                                    style={{ width: 32, height: 32, marginRight: 8 }}
+                                    resizeMode="contain"
+                                  />
+                                );
+                              } else if (iconOption && iconOption.emoji) {
+                                console.log('🔍 Usando emoji:', iconOption.emoji);
+                                return (
+                                  <Text style={{ fontSize: 28, marginRight: 8 }}>{iconOption.emoji}</Text>
+                                );
+                              } else {
+                                console.log('🔍 Usando fallback text:', card.icon);
+                                return (
+                                  <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>
+                                    {card.icon || '💳'}
+                                  </Text>
+                                );
+                              }
+                            } catch (iconError) {
+                              console.error('❌ Erro ao renderizar ícone do cartão:', iconError);
+                              if (iconError instanceof Error) {
+                                console.error('❌ Stack trace:', iconError.stack);
+                              }
+                              return (
+                                <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>💳</Text>
+                              );
+                            }
+                          })()}
+                          <Text style={styles.cardName}>{card.name || 'Cartão sem nome'}</Text>
+                        </View>
+                        <View style={styles.cardActions}>
+                          <TouchableOpacity
+                            onPress={() => handleEdit(card)}
+                            style={styles.actionButton}
+                          >
+                            <Edit3 size={16} color={theme.colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDelete(card)}
+                            style={styles.actionButton}
+                          >
+                            <Trash2 size={16} color={theme.colors.error} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <View style={styles.cardDetails}>
+                        <View style={styles.amountRow}>
+                          <Text style={styles.spentAmount}>
+                            R$ {cardSpending.toFixed(2)}
+                          </Text>
+                          <Text style={styles.limitAmount}>
+                            / R$ {cardLimit.toFixed(2)}
+                          </Text>
+                        </View>
+                        <Text style={styles.availableAmount}>
+                          Disponível: R$ {available.toFixed(2)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressTrack}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${Math.min(utilization, 100)}%`,
+                                backgroundColor:
+                                  utilization > 80
+                                    ? theme.colors.error
+                                    : utilization > 60
+                                    ? theme.colors.warning
+                                    : theme.colors.success,
+                              },
+                            ]}
                           />
-                        );
-                      } else if (iconOption && iconOption.emoji) {
-                        return (
-                          <Text style={{ fontSize: 28, marginRight: 8 }}>{iconOption.emoji}</Text>
-                        );
-                      } else {
-                        return (
-                          <Text style={{ marginRight: 8, color: theme.colors.textSecondary }}>{card.icon}</Text>
-                        );
-                      }
-                    })()}
-                    <Text style={styles.cardName}>{card.name}</Text>
-                  </View>
-                  <View style={styles.cardActions}>
-                    <TouchableOpacity
-                      onPress={() => handleEdit(card)}
-                      style={styles.actionButton}
-                    >
-                      <Edit3 size={16} color={theme.colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleDelete(card)}
-                      style={styles.actionButton}
-                    >
-                      <Trash2 size={16} color={theme.colors.error} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                        </View>
+                        <Text style={styles.utilizationText}>
+                          {`R$ ${cardSpending.toFixed(2)} utilizado`}
+                        </Text>
+                      </View>
 
-                <View style={styles.cardDetails}>
-                  <View style={styles.amountRow}>
-                    <Text style={styles.spentAmount}>
-                      R$ {cardSpending.toFixed(2)}
-                    </Text>
-                    <Text style={styles.limitAmount}>
-                      / R$ {cardLimit.toFixed(2)}
-                    </Text>
-                  </View>
-                  <Text style={styles.availableAmount}>
-                    Disponível: R$ {available.toFixed(2)}
+                      <View style={styles.datesRow}>
+                        <Text style={styles.dateText}>
+                          Fechamento: dia {card.closingDay || 1}
+                        </Text>
+                        <Text style={styles.dateText}>
+                          Vencimento: dia {card.dueDay || 1}
+                        </Text>
+                      </View>
+                    </Card>
+                  );
+                } catch (cardError) {
+                  console.error('❌ Erro ao renderizar cartão:', card.id, cardError);
+                  return (
+                    <Card key={card.id || Math.random()} style={styles.cardItem}>
+                      <Text style={{ color: theme.colors.error, textAlign: 'center', padding: 16 }}>
+                        Erro ao carregar cartão
+                      </Text>
+                    </Card>
+                  );
+                }
+              });
+            } catch (error) {
+              console.error('❌ Erro ao processar lista de cartões:', error);
+              return (
+                <Card style={styles.emptyCard}>
+                  <Text style={{ color: theme.colors.error, textAlign: 'center' }}>
+                    Erro ao carregar cartões
                   </Text>
-                </View>
-
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressTrack}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: `${Math.min(utilization, 100)}%`,
-                          backgroundColor:
-                            utilization > 80
-                              ? theme.colors.error
-                              : utilization > 60
-                              ? theme.colors.warning
-                              : theme.colors.success,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.utilizationText}>
-                    {`R$ ${cardSpending.toFixed(2)} utilizado`}
-                  </Text>
-                </View>
-
-                <View style={styles.datesRow}>
-                  <Text style={styles.dateText}>
-                    Fechamento: dia {card.closingDay}
-                  </Text>
-                  <Text style={styles.dateText}>
-                    Vencimento: dia {card.dueDay}
-                  </Text>
-                </View>
-              </Card>
-            );
-          })
+                </Card>
+              );
+            }
+          })()
         )}
       </ScrollView>
       {/* Modal de escolha do método de cadastro do cartão */}
@@ -305,6 +443,7 @@ export default function CardsScreen() {
         </View>
       </Modalize>
     </View>
+    </ErrorBoundary>
   );
 }
 

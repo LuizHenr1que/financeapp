@@ -5,6 +5,9 @@ import transactionsService, { CreateTransactionRequest } from '@/src/services/tr
 import dataService from '@/src/services/data';
 import { useAuth } from './AuthContext';
 import Toast from 'react-native-toast-message';
+import { preloadAccountIcons } from '@/components/AccountIconSelectorModal';
+import { useBackgroundSync } from '@/hooks/useBackgroundSync';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 interface DataContextType {
   data: AppData;
@@ -17,6 +20,9 @@ interface DataContextType {
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
   updateTransaction: (id: string, transaction: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  addTransactionOptimistic: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  updateTransactionOptimistic: (id: string, updates: Partial<Transaction>) => Promise<void>;
+  deleteTransactionOptimistic: (id: string) => Promise<void>;
   addGoal: (goal: Omit<Goal, 'id'>) => Promise<void>;
   updateGoal: (id: string, goal: Partial<Goal>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
@@ -44,10 +50,75 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const { isAuthenticated } = useAuth();
+  
+  // Inicializa sincronização em background
+  const backgroundSync = useBackgroundSync();
+  
+  // Monitora status de rede
+  const { updateSyncStatus, canPerformOnlineActions } = useNetworkStatus();
+
+  // Cache TTL (Time To Live) - 5 minutos
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  // Funções de cache otimizadas
+  const getCacheKey = (type: string) => `${type}_cache`;
+  const getSyncKey = (type: string) => `${type}_last_sync`;
+
+  const loadFromCache = async (type: string): Promise<any[] | null> => {
+    try {
+      const cacheKey = getCacheKey(type);
+      const syncKey = getSyncKey(type);
+      
+      const [cached, syncTime] = await Promise.all([
+        AsyncStorage.getItem(cacheKey),
+        AsyncStorage.getItem(syncKey)
+      ]);
+
+      if (cached && syncTime) {
+        const lastSyncTime = new Date(syncTime);
+        const now = new Date();
+
+        // Se o cache é recente, usa ele
+        if (now.getTime() - lastSyncTime.getTime() < CACHE_TTL) {
+          console.log(`✅ Carregando ${type} do cache`);
+          return JSON.parse(cached);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error(`Erro ao carregar cache de ${type}:`, error);
+      return null;
+    }
+  };
+
+  const saveToCache = async (type: string, data: any[]) => {
+    try {
+      const cacheKey = getCacheKey(type);
+      const syncKey = getSyncKey(type);
+      
+      await Promise.all([
+        AsyncStorage.setItem(cacheKey, JSON.stringify(data)),
+        AsyncStorage.setItem(syncKey, new Date().toISOString())
+      ]);
+      
+      console.log(`💾 ${type} salvo no cache`);
+    } catch (error) {
+      console.error(`Erro ao salvar cache de ${type}:`, error);
+    }
+  };
 
   useEffect(() => {
     loadData();
+    
+    // Pré-carregar ícones de bancos logo no início
+    const initializeImages = async () => {
+      console.log('🚀 Inicializando cache de imagens...');
+      await preloadAccountIcons();
+    };
+    initializeImages();
+    
     // Carregar dados do backend se o usuário estiver autenticado
     if (isAuthenticated) {
       loadTransactions();
@@ -79,8 +150,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const generateId = () => Date.now().toString();
 
-  // Carregar transações do backend
-  const loadTransactions = async () => {
+  // Carregar transações do backend com cache
+  const loadTransactions = async (forceRefresh: boolean = false) => {
     if (!isAuthenticated) {
       console.log('❌ Usuário não autenticado, não carregando transações do backend');
       return;
@@ -88,6 +159,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setIsLoadingTransactions(true);
+      
+      // Tenta carregar do cache primeiro
+      if (!forceRefresh) {
+        const cachedTransactions = await loadFromCache('transactions');
+        if (cachedTransactions) {
+          setData(prev => ({ ...prev, transactions: cachedTransactions }));
+          setIsLoadingTransactions(false);
+          return;
+        }
+      }
+
       console.log('📡 Carregando transações do backend...');
       
       const response = await transactionsService.getTransactions();
@@ -123,6 +205,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           ...prevData,
           transactions: mappedTransactions
         }));
+
+        // Salva no cache
+        await saveToCache('transactions', mappedTransactions);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar transações:', error);
@@ -194,20 +279,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (response.data?.cards) {
         console.log(`✅ ${response.data.cards.length} cartões carregados do backend`);
         // Mapear os cartões do backend para o formato local, mantendo todos os campos recebidos
-        const mappedCards: Card[] = response.data.cards.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          type: c.type ?? '',
-          icon: c.icon ?? '',
-          limit: c.limit !== undefined ? Number(c.limit) : 0,
-          currentSpending: typeof c.currentSpending === 'number' ? c.currentSpending : 0,
-          closingDay: Number(c.closingDay) || 1,
-          dueDay: Number(c.dueDay) || 1,
-          userId: c.userId ?? '',
-          accountId: c.accountId ?? '',
-          createdAt: c.createdAt ?? null,
-          updatedAt: c.updatedAt ?? null
-        }));
+        const mappedCards: Card[] = response.data.cards
+          .filter((c: any) => c && c.id) // Filtra cartões válidos
+          .map((c: any) => ({
+            id: c.id,
+            name: c.name || 'Cartão sem nome',
+            type: c.type || 'credit',
+            icon: c.icon || '',
+            limit: c.limit ? Number(c.limit) : 0,
+            currentSpending: typeof c.currentSpending === 'number' ? c.currentSpending : 0,
+            closingDay: c.closingDay ? Number(c.closingDay) : 1,
+            dueDay: c.dueDay ? Number(c.dueDay) : 1,
+            userId: c.userId || '',
+            accountId: c.accountId || '',
+            createdAt: c.createdAt || null,
+            updatedAt: c.updatedAt || null
+          }));
 
         setData(prevData => ({
           ...prevData,
@@ -630,6 +717,200 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // ===== OPERAÇÕES OTIMISTAS =====
+  
+  const addTransactionOptimistic = async (transaction: Omit<Transaction, 'id'>) => {
+    const tempId = `temp_${Date.now()}`;
+    const optimisticTransaction: Transaction = {
+      ...transaction,
+      id: tempId
+    };
+
+    // 1. Atualiza UI imediatamente
+    setData(prev => ({
+      ...prev,
+      transactions: [optimisticTransaction, ...prev.transactions]
+    }));
+
+    try {
+      // 2. Verifica conectividade antes de tentar enviar
+      if (!canPerformOnlineActions) {
+        Toast.show({
+          type: 'info',
+          text1: 'Sem conexão',
+          text2: 'Transação será sincronizada quando conectar',
+          visibilityTime: 3000
+        });
+        return; // Mantém a transação otimista na UI
+      }
+
+      // 3. Envia para o backend
+      const response = await transactionsService.createTransaction(transaction);
+      
+      if (response.data?.transactions && response.data.transactions.length > 0) {
+        // 4. Substitui a transação temporária pela real
+        const newTransaction = response.data.transactions[0];
+        const mappedTransaction: Transaction = {
+          id: newTransaction.id,
+          type: newTransaction.type,
+          amount: newTransaction.amount,
+          title: newTransaction.title,
+          description: newTransaction.description,
+          date: newTransaction.date,
+          categoryId: newTransaction.categoryId,
+          paymentMethod: (newTransaction.paymentMethod || 'cash') as 'cash' | 'pix' | 'card',
+          cardId: newTransaction.cardId,
+          launchType: newTransaction.launchType,
+          installments: newTransaction.installments,
+          valorComoParcela: newTransaction.valorComoParcela,
+          recurrenceType: newTransaction.recurrenceType,
+          currentInstallment: newTransaction.currentInstallment,
+          parentTransactionId: newTransaction.parentTransactionId
+        };
+
+        setData(prev => ({
+          ...prev,
+          transactions: prev.transactions.map(t => 
+            t.id === tempId ? mappedTransaction : t
+          )
+        }));
+        
+        // 5. Limpa cache para forçar refresh
+        await AsyncStorage.removeItem(getCacheKey('transactions'));
+        await updateSyncStatus({ lastSync: new Date() });
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Transação adicionada!',
+          visibilityTime: 2000
+        });
+      }
+    } catch (error) {
+      // 6. Se falhar, remove a transação otimista
+      setData(prev => ({
+        ...prev,
+        transactions: prev.transactions.filter(t => t.id !== tempId)
+      }));
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao adicionar transação',
+        text2: 'Verifique sua conexão e tente novamente'
+      });
+    }
+  };
+
+  const updateTransactionOptimistic = async (id: string, updates: Partial<Transaction>) => {
+    // 1. Salva estado anterior
+    const oldTransaction = data.transactions.find(t => t.id === id);
+    if (!oldTransaction) return;
+    
+    // 2. Atualiza UI imediatamente
+    setData(prev => ({
+      ...prev,
+      transactions: prev.transactions.map(t => 
+        t.id === id ? { ...t, ...updates } : t
+      )
+    }));
+
+    try {
+      // 3. Envia para o backend
+      const response = await transactionsService.updateTransaction(id, updates);
+      
+      if (response.data?.transaction) {
+        // 4. Substitui pela transação real do backend
+        const updatedTransaction = response.data.transaction;
+        const mappedTransaction: Transaction = {
+          id: updatedTransaction.id,
+          type: updatedTransaction.type,
+          amount: updatedTransaction.amount,
+          title: updatedTransaction.title,
+          description: updatedTransaction.description,
+          date: updatedTransaction.date,
+          categoryId: updatedTransaction.categoryId,
+          paymentMethod: (updatedTransaction.paymentMethod || 'cash') as 'cash' | 'pix' | 'card',
+          cardId: updatedTransaction.cardId,
+          launchType: updatedTransaction.launchType,
+          installments: updatedTransaction.installments,
+          valorComoParcela: updatedTransaction.valorComoParcela,
+          recurrenceType: updatedTransaction.recurrenceType,
+          currentInstallment: updatedTransaction.currentInstallment,
+          parentTransactionId: updatedTransaction.parentTransactionId
+        };
+
+        setData(prev => ({
+          ...prev,
+          transactions: prev.transactions.map(t => 
+            t.id === id ? mappedTransaction : t
+          )
+        }));
+        
+        // 5. Limpa cache
+        await AsyncStorage.removeItem(getCacheKey('transactions'));
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Transação atualizada!',
+          visibilityTime: 2000
+        });
+      }
+    } catch (error) {
+      // 6. Se falhar, reverte para estado anterior
+      setData(prev => ({
+        ...prev,
+        transactions: prev.transactions.map(t => 
+          t.id === id ? oldTransaction : t
+        )
+      }));
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao atualizar transação',
+        text2: 'Tente novamente'
+      });
+    }
+  };
+
+  const deleteTransactionOptimistic = async (id: string) => {
+    // 1. Salva transação para rollback
+    const deletedTransaction = data.transactions.find(t => t.id === id);
+    if (!deletedTransaction) return;
+    
+    // 2. Remove da UI imediatamente
+    setData(prev => ({
+      ...prev,
+      transactions: prev.transactions.filter(t => t.id !== id)
+    }));
+
+    try {
+      // 3. Envia para o backend
+      await transactionsService.deleteTransaction(id);
+      
+      // 4. Limpa cache
+      await AsyncStorage.removeItem(getCacheKey('transactions'));
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Transação removida!',
+        visibilityTime: 2000
+      });
+    } catch (error) {
+      // 5. Se falhar, adiciona a transação de volta
+      setData(prev => ({
+        ...prev,
+        transactions: [...prev.transactions, deletedTransaction].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+      }));
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao remover transação',
+        text2: 'Tente novamente'
+      });
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       data,
@@ -642,6 +923,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       addTransaction,
       updateTransaction,
       deleteTransaction,
+      addTransactionOptimistic,
+      updateTransactionOptimistic,
+      deleteTransactionOptimistic,
       addGoal,
       updateGoal,
       deleteGoal,

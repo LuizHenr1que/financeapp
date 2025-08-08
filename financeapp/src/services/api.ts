@@ -44,17 +44,19 @@ class ApiService {
       const url = `${this.baseURL}${endpoint}`;
 
       const config: RequestInit = {
+        ...options,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
-        ...options,
       };
 
       console.log('🌐 API Request:', {
         method: config.method || 'GET',
         url,
-        body: config.body ? JSON.parse(config.body as string) : undefined,
+        headers: config.headers,
+        body: config.body,
+        bodyParsed: config.body ? JSON.parse(config.body as string) : undefined,
       });
 
       const response = await fetch(url, config);
@@ -94,6 +96,13 @@ class ApiService {
     data?: any,
     token?: string
   ): Promise<ApiResponse<T>> {
+    console.log('📤 POST Request Debug:', {
+      endpoint,
+      data,
+      token: token ? 'present' : 'none',
+      stringified: data ? JSON.stringify(data) : 'undefined'
+    });
+    
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,

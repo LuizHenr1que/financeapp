@@ -569,6 +569,41 @@ class TransactionController {
         });
       }
 
+      // Filtrar apenas campos válidos para atualização
+      const validFields = {
+        type: updates.type,
+        amount: updates.amount,
+        title: updates.title,
+        description: updates.description,
+        date: updates.date,
+        categoryId: updates.categoryId,
+        paymentMethod: updates.paymentMethod,
+        launchType: updates.launchType,
+        installments: updates.installments,
+        valorComoParcela: updates.valorComoParcela,
+        recurrenceType: updates.recurrenceType,
+        // Incluir accountId e cardId apenas se fornecidos
+        ...(updates.accountId && { accountId: updates.accountId }),
+        ...(updates.cardId && { cardId: updates.cardId })
+      };
+
+      // Remover campos undefined
+        // Corrigir: nunca envie accountId e cardId juntos
+        if (cleanUpdates.accountId && cleanUpdates.cardId) {
+          // Se for pagamento por cartão, remova accountId
+          if (cleanUpdates.paymentMethod === 'card') {
+            delete cleanUpdates.accountId;
+          } else {
+            delete cleanUpdates.cardId;
+          }
+        }
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(validFields).filter(([_, value]) => value !== undefined)
+      );
+
+      console.log('🔄 Atualizando transação:', id);
+      console.log('📊 Dados para atualização:', JSON.stringify(cleanUpdates, null, 2));
+
       // Se for uma transação parcelada/recorrente, perguntar se quer atualizar todas
       if (existingTransaction.launchType !== 'unico' && updates.updateAll) {
         const parentId = existingTransaction.parentTransactionId || existingTransaction.id;
@@ -580,10 +615,7 @@ class TransactionController {
               { parentTransactionId: parentId }
             ]
           },
-          data: {
-            ...updates,
-            updateAll: undefined // remover flag do update
-          }
+          data: cleanUpdates
         });
 
         const updatedTransactions = await prisma.transaction.findMany({
@@ -608,7 +640,7 @@ class TransactionController {
         // Atualizar apenas esta transação
         const transaction = await prisma.transaction.update({
           where: { id },
-          data: updates,
+          data: cleanUpdates,
           include: {
             category: true,
             account: true,

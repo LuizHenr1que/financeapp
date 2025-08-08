@@ -12,25 +12,39 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:studio": "npx prisma studio",
     "prisma:seed": "npx prisma db seed",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false"
   },
-  "keywords": ["finance", "backend", "api", "nodejs", "express", "prisma"],
+  "keywords": [
+    "finance",
+    "backend",
+    "api",
+    "nodejs",
+    "express",
+    "prisma"
+  ],
   "author": "Seu Nome",
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^5.8.1",
-    "express": "^4.18.2",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
-    "dotenv": "^16.3.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.5",
     "nodemon": "^3.0.2",
-    "prisma": "^5.8.1"
+    "prisma": "^5.8.1",
+    "supertest": "^7.1.4"
   }
 }

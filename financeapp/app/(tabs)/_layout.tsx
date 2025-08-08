@@ -90,12 +90,15 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="goals"
-        options={{
-          title: 'Planejamento',
-          tabBarIcon: ({ size, color }) => (
-            <Calendar size={size} color={color} />
-          ),
+         options={{
+          href: null, // Hide from tabs
         }}
+        // options={{
+        //   title: 'Planejamento',
+        //   tabBarIcon: ({ size, color }) => (
+        //     <Calendar size={size} color={color} />
+        //   ),
+        // }}
       />
       <Tabs.Screen
         name="more"

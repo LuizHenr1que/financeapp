@@ -25,11 +25,15 @@ export interface Card {
   id: string;
   name: string;
   type?: 'credit' | 'debit';
-  icon: string;
-  limit: number;
-  currentSpending: number;
-  closingDay: number;
-  dueDay: number;
+  icon?: string;
+  limit?: number;
+  currentSpending?: number;
+  closingDay?: number;
+  dueDay?: number;
+  userId?: string;
+  accountId?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface Account {
