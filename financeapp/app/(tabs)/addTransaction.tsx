@@ -467,30 +467,22 @@ export default function AddTransactionScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Conta ou Cartão</Text>
           {/* Troca FlatList por ScrollView horizontal para manter o design e eliminar o erro */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoryScroll}
-          >
-            {availableOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.cardOption,
-                  { backgroundColor: option.color ?? theme.colors.secondary },
-                  formData.cardId === option.id && styles.cardOptionSelected,
-                ]}
-                onPress={() => {
-                  console.log('Selecionado:', option);
-                  setFormData({ ...formData, cardId: option.id });
-                }}
-              >
-                <Text style={styles.cardOptionText}>
-                  {option.name} {option.type === 'account' ? '(Conta)' : '(Cartão)'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <ScrollView horizontal style={styles.categoryScroll}>
+  {availableOptions.map(option => (
+    <TouchableOpacity
+      key={option.id}
+      style={[
+        styles.cardOption,
+        formData.cardId === option.id && styles.cardOptionSelected
+      ]}
+      onPress={() => setFormData(prev => ({ ...prev, cardId: option.id }))}
+    >
+      <Text style={styles.cardOptionText}>
+        {option.type === 'card' ? `Cartão: ${option.name}` : `Conta: ${option.name}`}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
         </View>
         {/* Lançamento */}
         <View style={styles.inputGroup}>

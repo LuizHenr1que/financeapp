@@ -1,14 +1,13 @@
-const { validationResult } = require('express-validator');
+const {
+  validationResult
+} = require('express-validator');
 const prisma = require('../config/database');
 
 class TransactionController {
   // Criar transação
   async create(req, res) {
     try {
-      console.log('\n🚀 === DADOS RECEBIDOS DA REQUISIÇÃO ===');
-      console.log('📦 Body da requisição:', JSON.stringify(req.body, null, 2));
-      console.log('👤 Usuário:', req.user?.id || 'N/A');
-      console.log('🚀 === FIM DOS DADOS DA REQUISIÇÃO ===\n');
+
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -84,7 +83,7 @@ class TransactionController {
             error: 'Cartão não encontrado'
           });
         }
-        
+
         // Para transações de cartão, precisamos de uma conta também
         // Se accountId foi fornecido, usar ele; senão, usar a primeira conta ativa
         console.log('🔍 AccountId fornecido:', accountId);
@@ -116,7 +115,7 @@ class TransactionController {
                 error: 'Nenhuma conta ativa encontrada para associar à transação do cartão'
               });
             }
-            
+
             finalAccountId = defaultAccount.id;
             console.log('✅ Usando conta padrão:', defaultAccount);
           } else {
@@ -140,10 +139,10 @@ class TransactionController {
               error: 'Nenhuma conta ativa encontrada para associar à transação do cartão'
             });
           }
-          
+
           finalAccountId = defaultAccount.id;
         }
-        
+
         finalCardId = cardId;
       } else if (accountId) {
         // Verificar se a conta pertence ao usuário
@@ -160,7 +159,7 @@ class TransactionController {
             error: 'Conta não encontrada ou inativa'
           });
         }
-        
+
         finalAccountId = accountId;
         finalCardId = null;
       } else {
@@ -173,7 +172,6 @@ class TransactionController {
       let createdTransactions = [];
 
       if (launchType === 'unico') {
-        // Transação única
         const transaction = await prisma.transaction.create({
           data: {
             type,
@@ -195,16 +193,27 @@ class TransactionController {
           }
         });
 
-        console.log('✅ TRANSAÇÃO ÚNICA CRIADA:', {
-          id: transaction.id,
-          tipo: transaction.type,
-          valor: transaction.amount,
-          descricao: transaction.description,
-          data: transaction.date
-        });
-
+        // Atualizar saldo da conta (apenas se for conta, não cartão)
+        if (finalAccountId && !finalCardId) {
+          const account = await prisma.account.findUnique({
+            where: {
+              id: finalAccountId
+            }
+          });
+          // Converta ambos para Number
+          const currentBalance = Number(account.balance) || 0;
+          const transactionAmount = Number(transaction.amount) || 0;
+          const newBalance = currentBalance + transactionAmount;
+          await prisma.account.update({
+            where: {
+              id: finalAccountId
+            },
+            data: {
+              balance: newBalance
+            }
+          });
+        }
         createdTransactions.push(transaction);
-
       } else if (launchType === 'recorrente') {
         // Transações recorrentes
         const numInstallments = installments || 12;
@@ -235,7 +244,7 @@ class TransactionController {
         // Criar transações filhas para as próximas recorrências
         for (let i = 1; i < numInstallments; i++) {
           const futureDate = new Date(baseDate);
-          
+
           if (recurrenceType === 'Mensal') {
             futureDate.setMonth(futureDate.getMonth() + i);
           } else if (recurrenceType === 'Semanal') {
@@ -271,7 +280,7 @@ class TransactionController {
         // Transações parceladas
         const numInstallments = installments || 1;
         const baseDate = new Date(date);
-        
+
         // Calcular valor da parcela
         const installmentAmount = valorComoParcela ? amount : amount / numInstallments;
 
@@ -348,7 +357,7 @@ class TransactionController {
       console.log('\n🎯 === TRANSAÇÕES CRIADAS E SALVAS NA TABELA ===');
       console.log(`📊 Total de transações criadas: ${transactionsWithDetails.length}`);
       console.log('📋 Detalhes das transações:');
-      
+
       transactionsWithDetails.forEach((transaction, index) => {
         console.log(`\n--- Transação ${index + 1} ---`);
         console.log(`ID: ${transaction.id}`);
@@ -389,18 +398,18 @@ class TransactionController {
       console.log('👤 Usuário logado:', req.user?.id || 'NENHUM USUÁRIO');
       console.log('👤 Nome do usuário:', req.user?.name || 'N/A');
       console.log('👤 Email do usuário:', req.user?.email || 'N/A');
-      
+
       const userId = req.user.id;
-      const { 
-        page = 1, 
-        limit = 50, 
-        type, 
-        categoryId, 
-        accountId,
-        cardId,
-        launchType,
-        startDate,
-        endDate 
+      const {
+        page = 1,
+          limit = 50,
+          type,
+          categoryId,
+          accountId,
+          cardId,
+          launchType,
+          startDate,
+          endDate
       } = req.query;
 
       const offset = (page - 1) * limit;
@@ -408,11 +417,21 @@ class TransactionController {
       // Construir filtros
       const where = {
         userId: userId,
-        ...(type && { type }),
-        ...(categoryId && { categoryId }),
-        ...(accountId && { accountId }),
-        ...(cardId && { cardId }),
-        ...(launchType && { launchType }),
+        ...(type && {
+          type
+        }),
+        ...(categoryId && {
+          categoryId
+        }),
+        ...(accountId && {
+          accountId
+        }),
+        ...(cardId && {
+          cardId
+        }),
+        ...(launchType && {
+          launchType
+        }),
         ...(startDate && endDate && {
           date: {
             gte: new Date(startDate),
@@ -454,12 +473,14 @@ class TransactionController {
           skip: offset,
           take: parseInt(limit)
         }),
-        prisma.transaction.count({ where })
+        prisma.transaction.count({
+          where
+        })
       ]);
 
       console.log(`📊 Transações encontradas para o usuário ${userId}:`, transactions.length);
       console.log(`📊 Total de transações no banco para este usuário:`, total);
-      
+
       if (transactions.length > 0) {
         console.log('📄 Primeiras transações:');
         transactions.slice(0, 3).forEach((t, i) => {
@@ -491,7 +512,9 @@ class TransactionController {
   // Obter transação por ID
   async show(req, res) {
     try {
-      const { id } = req.params;
+      const {
+        id
+      } = req.params;
       const userId = req.user.id;
 
       const transaction = await prisma.transaction.findFirst({
@@ -538,7 +561,9 @@ class TransactionController {
         });
       }
 
-      res.json({ transaction });
+      res.json({
+        transaction
+      });
 
     } catch (error) {
       console.error('Erro ao obter transação:', error);
@@ -551,7 +576,9 @@ class TransactionController {
   // Atualizar transação
   async update(req, res) {
     try {
-      const { id } = req.params;
+      const {
+        id
+      } = req.params;
       const userId = req.user.id;
       const updates = req.body;
 
@@ -583,23 +610,27 @@ class TransactionController {
         valorComoParcela: updates.valorComoParcela,
         recurrenceType: updates.recurrenceType,
         // Incluir accountId e cardId apenas se fornecidos
-        ...(updates.accountId && { accountId: updates.accountId }),
-        ...(updates.cardId && { cardId: updates.cardId })
+        ...(updates.accountId && {
+          accountId: updates.accountId
+        }),
+        ...(updates.cardId && {
+          cardId: updates.cardId
+        })
       };
 
-      // Remover campos undefined
-        // Corrigir: nunca envie accountId e cardId juntos
-        if (cleanUpdates.accountId && cleanUpdates.cardId) {
-          // Se for pagamento por cartão, remova accountId
-          if (cleanUpdates.paymentMethod === 'card') {
-            delete cleanUpdates.accountId;
-          } else {
-            delete cleanUpdates.cardId;
-          }
-        }
       const cleanUpdates = Object.fromEntries(
         Object.entries(validFields).filter(([_, value]) => value !== undefined)
       );
+
+      // Corrigir: nunca envie accountId e cardId juntos
+      if (cleanUpdates.accountId && cleanUpdates.cardId) {
+        // Se for pagamento por cartão, remova accountId
+        if (cleanUpdates.paymentMethod === 'card') {
+          delete cleanUpdates.accountId;
+        } else {
+          delete cleanUpdates.cardId;
+        }
+      }
 
       console.log('🔄 Atualizando transação:', id);
       console.log('📊 Dados para atualização:', JSON.stringify(cleanUpdates, null, 2));
@@ -607,12 +638,15 @@ class TransactionController {
       // Se for uma transação parcelada/recorrente, perguntar se quer atualizar todas
       if (existingTransaction.launchType !== 'unico' && updates.updateAll) {
         const parentId = existingTransaction.parentTransactionId || existingTransaction.id;
-        
+
         await prisma.transaction.updateMany({
           where: {
-            OR: [
-              { id: parentId },
-              { parentTransactionId: parentId }
+            OR: [{
+                id: parentId
+              },
+              {
+                parentTransactionId: parentId
+              }
             ]
           },
           data: cleanUpdates
@@ -620,9 +654,12 @@ class TransactionController {
 
         const updatedTransactions = await prisma.transaction.findMany({
           where: {
-            OR: [
-              { id: parentId },
-              { parentTransactionId: parentId }
+            OR: [{
+                id: parentId
+              },
+              {
+                parentTransactionId: parentId
+              }
             ]
           },
           include: {
@@ -639,7 +676,9 @@ class TransactionController {
       } else {
         // Atualizar apenas esta transação
         const transaction = await prisma.transaction.update({
-          where: { id },
+          where: {
+            id
+          },
           data: cleanUpdates,
           include: {
             category: true,
@@ -665,9 +704,13 @@ class TransactionController {
   // Deletar transação
   async delete(req, res) {
     try {
-      const { id } = req.params;
+      const {
+        id
+      } = req.params;
       const userId = req.user.id;
-      const { deleteAll = false } = req.query;
+      const {
+        deleteAll = false
+      } = req.query;
 
       // Verificar se a transação existe e pertence ao usuário
       const existingTransaction = await prisma.transaction.findFirst({
@@ -686,12 +729,15 @@ class TransactionController {
       if (deleteAll && existingTransaction.launchType !== 'unico') {
         // Deletar toda a série
         const parentId = existingTransaction.parentTransactionId || existingTransaction.id;
-        
+
         await prisma.transaction.deleteMany({
           where: {
-            OR: [
-              { id: parentId },
-              { parentTransactionId: parentId }
+            OR: [{
+                id: parentId
+              },
+              {
+                parentTransactionId: parentId
+              }
             ]
           }
         });
@@ -702,7 +748,9 @@ class TransactionController {
       } else {
         // Deletar apenas esta transação
         await prisma.transaction.delete({
-          where: { id }
+          where: {
+            id
+          }
         });
 
         res.json({
